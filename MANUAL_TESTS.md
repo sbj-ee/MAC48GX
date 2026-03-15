@@ -272,7 +272,106 @@ RS+MTH (toggle back)
 
 ---
 
-## 7. Symbolic Constants and Evaluation
+## 7. Rectangular ↔ Polar Conversions
+
+### 7.1 Rectangular to polar (manual calculation)
+Enter a point (3, 4) and compute magnitude and angle:
+```
+3 LS+SQRT               (3² = 9)
+4 LS+SQRT               (4² = 16)
++                        (9 + 16 = 25)
+SQRT                     (√25 = 5, this is r)
+```
+**Expected:** `5` (magnitude)
+
+```
+4 ENTER 3 ÷
+LS+TAN                   (atan(4/3))
+```
+**Expected:** `53.1301023542` (angle in degrees)
+
+### 7.2 Polar to rectangular (manual calculation)
+Convert r=10, θ=30° to (x, y):
+```
+10 ENTER 30 COS ×       (x = 10·cos(30))
+```
+**Expected:** `8.66025403784`
+
+```
+10 ENTER 30 SIN ×       (y = 10·sin(30))
+```
+**Expected:** `5`
+
+### 7.3 Rect to polar via complex number
+Enter as complex, switch to polar display:
+```
+LS+÷ 3 SPC 4 ENTER      (enter (3,4))
+RS+MTH                   (toggle to POLAR display mode)
+```
+**Expected:** `(5,∠53.1301023542)` (polar form: magnitude 5, angle 53.13°)
+
+### 7.4 Polar to rect via complex number
+```
+RS+MTH                   (toggle back to RECTANGULAR mode)
+```
+**Expected:** `(3,4)` (rectangular form restored)
+
+### 7.5 Rect-Polar roundtrip verification
+```
+LS+÷ 1 SPC 1 ENTER      (enter (1,1))
+RS+MTH                   (to polar)
+```
+**Expected:** `(1.41421356237,∠45)` (r=√2, θ=45°)
+
+```
+RS+MTH                   (back to rect)
+```
+**Expected:** `(1,1)` (original values)
+
+### 7.6 Multiple angle conversions
+Start in DEG mode. Enter polar-like values and convert:
+```
+5 ENTER 30 COS ×        (x = 5·cos(30) = 4.33012701892)
+5 ENTER 30 SIN ×        (y = 5·sin(30) = 2.5)
+```
+Verify: `x² + y² = 25` (= r² = 5²)
+```
+LS+SQRT                  (x²)
+SWAP
+LS+SQRT                  (y²)
++                        (x² + y²)
+SQRT                     (should give 5)
+```
+**Expected:** `5`
+
+### 7.7 Unit circle points (DEG mode)
+Test key angles on the unit circle:
+
+| Angle | cos(θ) = x | sin(θ) = y |
+|-------|-----------|-----------|
+| 0° | 1 | 0 |
+| 30° | 0.866025403784 | 0.5 |
+| 45° | 0.707106781187 | 0.707106781187 |
+| 60° | 0.5 | 0.866025403784 |
+| 90° | 0 | 1 |
+
+For each: enter the angle, press COS or SIN, verify the value.
+
+### 7.8 Polar to rect in RAD mode
+Switch to RAD mode (`LS+MTH`), then:
+```
+1 ENTER                  (r = 1)
+LS+SPC LS+EVAL           (π → 3.14159... on stack)
+4 ÷                      (θ = π/4)
+COS ×                    (x = 1·cos(π/4))
+```
+**Expected:** `0.707106781187` (= √2/2)
+
+Switch back to DEG mode: `LS+MTH`
+
+---
+
+## 8. Symbolic Constants and Evaluation
 
 ### 7.1 π constant
 ```
