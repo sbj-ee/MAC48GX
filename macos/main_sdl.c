@@ -270,19 +270,21 @@ static void *emulator_thread(void *arg)
 #define HDR_H    14
 #define FULL_H  (HDR_H + LCD_H)   /* 142 */
 
-/* Unified scale: numerator / denominator = 3/2 = 1.5x */
-#define SC_NUM  3
-#define SC_DEN  2
+/* Scale: 3/2 = 1.5x horizontal, slightly compressed vertical */
+#define SC_NUM   3
+#define SC_DEN   2
+#define SCV_NUM  10    /* vertical scale for buttons: 10/7 ≈ 1.43x */
+#define SCV_DEN   7
 
 /* LCD area in screen pixels */
-#define LCD_SW  ((LCD_W * SC_NUM) / SC_DEN)   /* 393 */
-#define LCD_SH  ((FULL_H * SC_NUM) / SC_DEN)  /* 213 */
+#define LCD_SW  ((LCD_W * SC_NUM) / SC_DEN)    /* 393 */
+#define LCD_SH  ((FULL_H * SC_NUM) / SC_DEN)   /* 213 */
 
 /* Button area in screen pixels */
 #define BTN_ORIG_W  296
 #define BTN_ORIG_H  426
-#define BTN_SW      ((BTN_ORIG_W * SC_NUM) / SC_DEN)  /* 444 */
-#define BTN_SH      ((BTN_ORIG_H * SC_NUM) / SC_DEN)  /* 639 */
+#define BTN_SW      ((BTN_ORIG_W * SC_NUM) / SC_DEN)    /* 444 */
+#define BTN_SH      ((BTN_ORIG_H * SCV_NUM) / SCV_DEN)  /* 608 — compressed */
 
 /* Window dimensions — add left/right margin for buttons */
 #define BTN_MARGIN 28
@@ -291,7 +293,7 @@ static void *emulator_thread(void *arg)
 #define LCD_Y   4
 #define BTN_X   BTN_MARGIN
 #define BTN_Y   (LCD_Y + LCD_SH + 16)         /* space for title */
-#define WIN_H   (BTN_Y + BTN_SH + 16)         /* space for CANCEL label */
+#define WIN_H   (BTN_Y + BTN_SH + 26)         /* space for CANCEL label */
 
 extern unsigned short disp_buf_short[];        /* defined in lcd_mac.c */
 extern unsigned short disp_buf_header_short[]; /* defined in lcd_mac.c */
@@ -413,7 +415,7 @@ static int btn_to_screen_x(int bx)
 }
 static int btn_to_screen_y(int by)
 {
-    return BTN_Y + (by * SC_NUM) / SC_DEN;
+    return BTN_Y + (by * SCV_NUM) / SCV_DEN;
 }
 static int btn_screen_w(unsigned int bw)
 {
@@ -421,7 +423,7 @@ static int btn_screen_w(unsigned int bw)
 }
 static int btn_screen_h(unsigned int bh)
 {
-    return (bh * SC_NUM) / SC_DEN;
+    return (bh * SCV_NUM) / SCV_DEN;
 }
 
 /* Hit test: returns button index or -1 */
