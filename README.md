@@ -15,6 +15,7 @@ This port compiles the C emulator core natively for macOS and replaces the Andro
 - Copy/paste: Cmd+C copies stack to clipboard, Cmd+V pastes numbers
 - Keyboard shortcut overlay (Cmd+K) and About screen (Cmd+I)
 - HiDPI/Retina display support
+- Universal binary (x86_64 + arm64) — runs natively on Intel and Apple Silicon
 - Native `.app` bundle and DMG installer
 - Calculator state saved to `~/.droid48/` on quit
 - 148 automated tests with headless and visual modes
@@ -23,20 +24,50 @@ This port compiles the C emulator core natively for macOS and replaces the Andro
 
 - macOS (tested on macOS Sonoma)
 - Xcode Command Line Tools (`xcode-select --install`)
-- [Homebrew](https://brew.sh)
-
-```bash
-brew install sdl2 sdl2_ttf
-```
 
 ## Building
 
+### Native build (current architecture only)
+
+Install SDL2 via [Homebrew](https://brew.sh):
+
 ```bash
+brew install sdl2 sdl2_ttf
 cd macos
 make              # build binary
 make bundle       # create MAC48GX.app
 make dmg          # create DMG installer
 make test         # run 148 headless tests
+```
+
+### Universal build (x86_64 + arm64)
+
+Download the official prebuilt universal SDL2 framework DMGs from the SDL GitHub releases, then build with both architecture slices:
+
+```bash
+# Download official universal SDL2 frameworks
+curl -LO https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.dmg
+curl -LO https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.dmg
+hdiutil attach SDL2-2.32.10.dmg -mountpoint /Volumes/SDL2
+hdiutil attach SDL2_ttf-2.24.0.dmg -mountpoint /Volumes/SDL2_ttf
+
+# Build universal DMG
+cd macos
+make dmg \
+  ARCH="-arch x86_64 -arch arm64" \
+  "CFLAGS=-std=gnu11 -O2 -arch x86_64 -arch arm64 -I. -I../app/src/main/jni \
+   -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
+   -DAPP_VERSION='\"$(git describe --tags --abbrev=0)\"' \
+   -I/Volumes/SDL2/SDL2.framework/Headers \
+   -Wno-implicit-function-declaration -Wno-incompatible-pointer-types \
+   -Wno-int-conversion -Wno-unused-variable -Wno-unused-function \
+   -Wno-deprecated-non-prototype" \
+  "LDFLAGS=-arch x86_64 -arch arm64 \
+   -F/Volumes/SDL2 -framework SDL2 \
+   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread"
+
+hdiutil detach /Volumes/SDL2
+hdiutil detach /Volumes/SDL2_ttf
 ```
 
 Binary: `macos/build/MAC48GX`

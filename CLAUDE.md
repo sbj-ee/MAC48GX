@@ -7,7 +7,7 @@ MAC48GX is a macOS calculator emulator based on droid48/x48. The Android JNI/UI 
 ## Build
 
 ```bash
-cd macos && make              # build binary
+cd macos && make              # build binary (native arch)
 cd macos && make bundle       # create MAC48GX.app
 cd macos && make dmg          # create DMG installer
 cd macos && make test         # run 148 headless tests
@@ -15,7 +15,33 @@ cd macos && make test         # run 148 headless tests
 ./macos/build/MAC48GX --test --delay 30  # with countdown
 ```
 
-Requires: `brew install sdl2 sdl2_ttf`
+Native build requires: `brew install sdl2 sdl2_ttf`
+
+### Universal binary (x86_64 + arm64)
+
+Homebrew SDL2 is single-arch. For a universal build, use the official prebuilt SDL2 framework DMGs from the SDL GitHub releases (they contain fat binaries):
+
+```bash
+curl -LO https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.dmg
+curl -LO https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.dmg
+hdiutil attach SDL2-2.32.10.dmg -mountpoint /Volumes/SDL2
+hdiutil attach SDL2_ttf-2.24.0.dmg -mountpoint /Volumes/SDL2_ttf
+
+make dmg \
+  ARCH="-arch x86_64 -arch arm64" \
+  "CFLAGS=-std=gnu11 -O2 -arch x86_64 -arch arm64 -I. -I../app/src/main/jni \
+   -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
+   -DAPP_VERSION='\"$(git describe --tags --abbrev=0)\"' \
+   -I/Volumes/SDL2/SDL2.framework/Headers \
+   -Wno-implicit-function-declaration -Wno-incompatible-pointer-types \
+   -Wno-int-conversion -Wno-unused-variable -Wno-unused-function \
+   -Wno-deprecated-non-prototype" \
+  "LDFLAGS=-arch x86_64 -arch arm64 \
+   -F/Volumes/SDL2 -framework SDL2 \
+   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread"
+
+hdiutil detach /Volumes/SDL2 && hdiutil detach /Volumes/SDL2_ttf
+```
 
 ## Project structure
 
