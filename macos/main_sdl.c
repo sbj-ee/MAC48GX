@@ -253,9 +253,9 @@ static void *emulator_thread(void *arg)
 #define HDR_H    14
 #define FULL_H  (HDR_H + LCD_H)   /* 142 */
 
-/* Unified scale: numerator / denominator = 8/5 = 1.6x */
-#define SC_NUM  8
-#define SC_DEN  5
+/* Unified scale: numerator / denominator = 3/2 = 1.5x */
+#define SC_NUM  3
+#define SC_DEN  2
 
 /* LCD area in screen pixels */
 #define LCD_SW  ((LCD_W * SC_NUM) / SC_DEN)   /* 393 */
@@ -268,13 +268,13 @@ static void *emulator_thread(void *arg)
 #define BTN_SH      ((BTN_ORIG_H * SC_NUM) / SC_DEN)  /* 639 */
 
 /* Window dimensions — add left/right margin for buttons */
-#define BTN_MARGIN 18
+#define BTN_MARGIN 28
 #define WIN_W   (BTN_SW + 2 * BTN_MARGIN)     /* 474 */
 #define LCD_X   ((WIN_W - LCD_SW) / 2)        /* 40  — center LCD */
-#define LCD_Y   6
+#define LCD_Y   4
 #define BTN_X   BTN_MARGIN
-#define BTN_Y   (LCD_Y + LCD_SH + 18)         /* space for title */
-#define WIN_H   (BTN_Y + BTN_SH + 18)         /* space for CANCEL label */
+#define BTN_Y   (LCD_Y + LCD_SH + 16)         /* space for title */
+#define WIN_H   (BTN_Y + BTN_SH + 16)         /* space for CANCEL label */
 
 extern unsigned short disp_buf_short[];        /* defined in lcd_mac.c */
 extern unsigned short disp_buf_header_short[]; /* defined in lcd_mac.c */
@@ -734,8 +734,8 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             SDL_RenderDrawLine(renderer, cx-8, cy, cx-3, cy-4);
             SDL_RenderDrawLine(renderer, cx-8, cy, cx-3, cy+4);
         } else if (i == 29) {
-            /* Alpha symbol α */
-            draw_text_centered(renderer, font_btn_lg, "a", clr_white,
+            /* Alpha symbol α (Greek lowercase alpha, UTF-8: 0xCE 0xB1) */
+            draw_text_centered(renderer, font_btn_lg, "\xce\xb1", clr_white,
                                sx + sw/2, sy + sh/2, sw - 4);
         } else if (i == 34) {
             /* Left shift: draw ← arrow in green */
@@ -766,31 +766,33 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
         /* ---- Alpha letter (green, bottom-right of button) ---- */
         if (buttons[i].letter && buttons[i].letter[0]) {
             draw_text_left(renderer, font_shift, buttons[i].letter, clr_alpha,
-                           sx + sw + 3, sy + sh - 6, 0);
+                           sx + sw + 2, sy + sh - 5, 0);
         }
 
         /* ---- Left / Right shift labels above button ---- */
         {
             int has_left  = is_printable_label(buttons[i].left);
             int has_right = is_printable_label(buttons[i].right);
-            int ly = sy - 15;  /* above the button */
+            int ly = sy - 13;  /* above the button */
             char lbuf[32], rbuf[32];
             const char *ltxt = has_left  ? trim_label(buttons[i].left,  lbuf, sizeof(lbuf)) : NULL;
             const char *rtxt = has_right ? trim_label(buttons[i].right, rbuf, sizeof(rbuf)) : NULL;
+            /* Max label width: half the button width to avoid overlap */
+            int half_w = sw / 2 + 8;
 
             if (has_left && has_right) {
-                /* Both labels: left ends at midpoint, right starts at midpoint */
+                /* Both labels: split at button center with gap */
                 int mid = sx + sw / 2;
                 draw_text_right(renderer, font_shift, ltxt,
-                                clr_lshift, mid - 4, ly, sw);
+                                clr_lshift, mid - 6, ly, half_w);
                 draw_text_left(renderer, font_shift, rtxt,
-                               clr_rshift, mid + 4, ly, sw);
+                               clr_rshift, mid + 6, ly, half_w);
             } else if (has_left) {
                 draw_text_centered(renderer, font_shift, ltxt,
-                                   clr_lshift, sx + sw/2, ly, sw + 20);
+                                   clr_lshift, sx + sw/2, ly, sw + 10);
             } else if (has_right) {
                 draw_text_centered(renderer, font_shift, rtxt,
-                                   clr_rshift, sx + sw/2, ly, sw + 20);
+                                   clr_rshift, sx + sw/2, ly, sw + 10);
             }
         }
 
@@ -916,8 +918,8 @@ int main(int argc, char **argv)
         font_btn    = TTF_OpenFont(fn, 18);
         font_btn_lg = TTF_OpenFont(fn, 24);
         font_btn_sm = TTF_OpenFont(fn, 15);
-        font_shift  = TTF_OpenFont(fb, 14);
-        font_title  = TTF_OpenFont(fb, 14);
+        font_shift  = TTF_OpenFont(fb, 11);
+        font_title  = TTF_OpenFont(fb, 13);
         if (!font_btn) {
             fn = "/System/Library/Fonts/Monaco.ttf";
             font_btn    = TTF_OpenFont(fn, 12);

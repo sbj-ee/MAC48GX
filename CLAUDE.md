@@ -92,7 +92,8 @@ Edit `keysym_to_button()` in `macos/main_sdl.c`. Map an `SDL_Keycode` to a butto
 Edit the `render()` function in `macos/main_sdl.c`. Button colors, labels, and shift annotations are all drawn there.
 
 ### Changing window size
-Adjust `SC_NUM`/`SC_DEN` (unified scale factor) in `macos/main_sdl.c`. Current: 8/5 = 1.6x.
+Adjust `SC_NUM`/`SC_DEN` (unified scale factor) in `macos/main_sdl.c`. Current: 3/2 = 1.5x.
+Adjust `BTN_MARGIN` for left/right padding (current: 28px).
 
 ### Adding a new test
 Add a `static void test_xxx(void)` function in `macos/test_cases.h` using the helpers:
