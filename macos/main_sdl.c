@@ -1288,62 +1288,94 @@ int main(int argc, char **argv)
             }
         }
 
-        render(renderer, lcd_tex);
+        if (!show_keyboard_help && !show_about) {
+            render(renderer, lcd_tex);
+        }
 
-        /* Draw overlay if active */
+        /* Draw overlay if active (replaces normal render) */
         if (show_keyboard_help) {
-            /* Semi-transparent background */
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_Rect overlay = { 20, 20, WIN_W - 40, WIN_H - 40 };
-            SDL_RenderFillRect(renderer, &overlay);
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+            SDL_SetRenderDrawColor(renderer, 20, 25, 30, 255);
+            SDL_RenderClear(renderer);
+            /* Solid dark background for readability */
+            SDL_SetRenderDrawColor(renderer, 20, 25, 30, 255);
+            SDL_Rect overlay = { 10, 10, WIN_W - 20, WIN_H - 20 };
+            fill_rounded_rect(renderer, 10, 10, WIN_W - 20, WIN_H - 20, 12);
+            /* Border */
+            SDL_SetRenderDrawColor(renderer, 100, 180, 160, 255);
+            SDL_RenderDrawRect(renderer, &overlay);
 
-            SDL_Color w = { 230, 230, 230, 255 };
-            SDL_Color g = { 130, 210, 190, 255 };
-            int y = 40;
-            draw_text_centered(renderer, font_btn, "Keyboard Shortcuts", w, WIN_W/2, y, 0); y += 30;
-            draw_text_left(renderer, font_shift, "0-9  . SPC     Number keys", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "+ - * /         Arithmetic", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Enter           ENTER", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Backspace       Backspace", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Delete          DEL", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Escape          ON", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Arrow keys      Cursor", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "F1-F6           Menu A-F", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "s c t           SIN COS TAN", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "a               ALPHA", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "e               EEX", g, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "n               +/- (negate)", g, 40, y, 0); y += 24;
-            draw_text_left(renderer, font_shift, "Cmd+C           Copy stack to clipboard", w, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Cmd+V           Paste number", w, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Cmd+K           This help", w, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Cmd+I           About", w, 40, y, 0); y += 18;
-            draw_text_left(renderer, font_shift, "Cmd+Q           Quit", w, 40, y, 0); y += 24;
-            draw_text_centered(renderer, font_shift, "Click anywhere or press Esc to dismiss", w, WIN_W/2, y, 0);
+            SDL_Color w  = { 240, 240, 240, 255 };
+            SDL_Color g  = { 130, 220, 200, 255 };
+            SDL_Color gy = { 160, 160, 170, 255 };
+            int lx = 50, rx = WIN_W/2 + 20;
+            int y = 50;
+
+            draw_text_centered(renderer, font_btn_lg, "Keyboard Shortcuts", g, WIN_W/2, y, 0); y += 45;
+
+            draw_text_left(renderer, font_btn_sm, "Calculator Keys", g, lx, y, 0); y += 30;
+            draw_text_left(renderer, font_btn_sm, "0 - 9  .  SPC", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Number entry", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "+  -  *  /", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Arithmetic", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Enter", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "ENTER / DUP", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Backspace", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Backspace / DROP", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Delete", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "DEL", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Escape", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "ON / CANCEL", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Arrow keys", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Cursor / navigation", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "F1 - F6", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Menu keys A - F", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "s  c  t", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "SIN  COS  TAN", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "a", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "ALPHA", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "e  /  n", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "EEX  /  +/- (negate)", gy, rx, y, 0); y += 35;
+
+            draw_text_left(renderer, font_btn_sm, "App Commands", g, lx, y, 0); y += 30;
+            draw_text_left(renderer, font_btn_sm, "Cmd + C", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Copy stack to clipboard", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Cmd + V", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Paste number", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Cmd + K", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "This help", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Cmd + I", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "About", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Cmd + Q", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Quit", gy, rx, y, 0); y += 40;
+
+            draw_text_centered(renderer, font_btn_sm, "Click or press Esc to dismiss", gy, WIN_W/2, y, 0);
             SDL_RenderPresent(renderer);
         } else if (show_about) {
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_Rect overlay = { 40, WIN_H/2 - 120, WIN_W - 80, 240 };
-            SDL_RenderFillRect(renderer, &overlay);
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+            SDL_SetRenderDrawColor(renderer, 20, 25, 30, 255);
+            SDL_RenderClear(renderer);
+            fill_rounded_rect(renderer, 60, WIN_H/2 - 140, WIN_W - 120, 280, 12);
+            {
+                SDL_Rect border = { 60, WIN_H/2 - 140, WIN_W - 120, 280 };
+                SDL_SetRenderDrawColor(renderer, 100, 180, 160, 255);
+                SDL_RenderDrawRect(renderer, &border);
+            }
 
-            SDL_Color w = { 230, 230, 230, 255 };
-            SDL_Color g = { 130, 210, 190, 255 };
-            int y = WIN_H/2 - 90;
+            SDL_Color w = { 240, 240, 240, 255 };
+            SDL_Color g = { 130, 220, 200, 255 };
+            SDL_Color gy = { 160, 160, 170, 255 };
+            int y = WIN_H/2 - 100;
             {
                 char ver[64];
                 snprintf(ver, sizeof(ver), "MAC48GX %s", APP_VERSION);
-                draw_text_centered(renderer, font_btn, ver, w, WIN_W/2, y, 0);
+                draw_text_centered(renderer, font_btn_lg, ver, g, WIN_W/2, y, 0);
             }
-            y += 28;
-            draw_text_centered(renderer, font_shift, "Saturn CPU emulator for macOS", g, WIN_W/2, y, 0); y += 22;
-            draw_text_centered(renderer, font_shift, "Based on x48 by Eddie C. Dost (1994)", w, WIN_W/2, y, 0); y += 18;
-            draw_text_centered(renderer, font_shift, "Android port: droid48 by Arnaud Brochard", w, WIN_W/2, y, 0); y += 18;
-            draw_text_centered(renderer, font_shift, "macOS port: MAC48GX", w, WIN_W/2, y, 0); y += 18;
-            draw_text_centered(renderer, font_shift, "Licensed under GPL-3.0", g, WIN_W/2, y, 0); y += 24;
-            draw_text_centered(renderer, font_shift, "Click anywhere or press Esc to dismiss", w, WIN_W/2, y, 0);
+            y += 40;
+            draw_text_centered(renderer, font_btn_sm, "Saturn CPU Emulator for macOS", w, WIN_W/2, y, 0); y += 30;
+            draw_text_centered(renderer, font_btn_sm, "x48 by Eddie C. Dost (1994)", gy, WIN_W/2, y, 0); y += 24;
+            draw_text_centered(renderer, font_btn_sm, "droid48 by Arnaud Brochard", gy, WIN_W/2, y, 0); y += 24;
+            draw_text_centered(renderer, font_btn_sm, "macOS port: MAC48GX", gy, WIN_W/2, y, 0); y += 30;
+            draw_text_centered(renderer, font_btn_sm, "Licensed under GPL-3.0", g, WIN_W/2, y, 0); y += 35;
+            draw_text_centered(renderer, font_btn_sm, "Click or press Esc to dismiss", gy, WIN_W/2, y, 0);
             SDL_RenderPresent(renderer);
         }
 
