@@ -271,29 +271,30 @@ static void *emulator_thread(void *arg)
 #define HDR_H    14
 #define FULL_H  (HDR_H + LCD_H)   /* 142 */
 
-/* Scale: 3/2 = 1.5x horizontal, slightly compressed vertical */
-#define SC_NUM   3
-#define SC_DEN   2
-#define SCV_NUM  10    /* vertical scale for buttons: 10/7 ≈ 1.43x */
+/* Scale: 7/4=1.75x horizontal, 10/7≈1.43x vertical (compact rows) */
+#define SC_NUM   7
+#define SC_DEN   4
+#define SCV_NUM  10
 #define SCV_DEN   7
 
-/* LCD area in screen pixels */
-#define LCD_SW  ((LCD_W * SC_NUM) / SC_DEN)    /* 393 */
-#define LCD_SH  ((FULL_H * SC_NUM) / SC_DEN)   /* 213 */
+/* LCD area in screen pixels (uses horizontal scale) */
+#define LCD_SW  ((LCD_W * SC_NUM) / SC_DEN)    /* 458 */
+#define LCD_SH  ((FULL_H * SC_NUM) / SC_DEN)   /* 248 */
 
 /* Button area in screen pixels */
 #define BTN_ORIG_W  296
 #define BTN_ORIG_H  426
-#define BTN_SW      ((BTN_ORIG_W * SC_NUM) / SC_DEN)    /* 444 */
-#define BTN_SH      ((BTN_ORIG_H * SCV_NUM) / SCV_DEN)  /* 608 — compressed */
+#define BTN_SW      ((BTN_ORIG_W * SC_NUM) / SC_DEN)    /* 518 */
+#define BTN_SH      ((BTN_ORIG_H * SCV_NUM) / SCV_DEN)  /* 608 */
 
-/* Window dimensions — add left/right margin for buttons */
-#define BTN_MARGIN 28
+/* Window dimensions */
+#define BTN_MARGIN 20
 #define WIN_W   (BTN_SW + 2 * BTN_MARGIN)     /* 474 */
-#define LCD_X   ((WIN_W - LCD_SW) / 2)        /* 40  — center LCD */
-#define LCD_Y   4
+#define LCD_X   ((WIN_W - LCD_SW) / 2)        /* center LCD */
+#define TITLE_H 22                            /* space for title above LCD */
+#define LCD_Y   TITLE_H
 #define BTN_X   BTN_MARGIN
-#define BTN_Y   (LCD_Y + LCD_SH + 16)         /* space for title */
+#define BTN_Y   (LCD_Y + LCD_SH + 16)         /* space between LCD and buttons */
 #define WIN_H   (BTN_Y + BTN_SH + 26)         /* space for CANCEL label */
 
 extern unsigned short disp_buf_short[];        /* defined in lcd_mac.c */
@@ -603,29 +604,29 @@ static const char *trim_label(const char *s, char *buf, int bufsz)
  * Text drawing helpers
  * ------------------------------------------------------------------ */
 
-/* Draw a filled rounded rectangle */
+/* Draw a filled rounded rectangle using scanlines */
 static void fill_rounded_rect(SDL_Renderer *renderer, int x, int y, int w, int h, int rad)
 {
-    int i, dx, dy;
-    /* Center body */
-    SDL_Rect center = { x + rad, y, w - 2*rad, h };
-    SDL_RenderFillRect(renderer, &center);
-    /* Left and right strips */
-    SDL_Rect left_strip  = { x, y + rad, rad, h - 2*rad };
-    SDL_Rect right_strip = { x + w - rad, y + rad, rad, h - 2*rad };
-    SDL_RenderFillRect(renderer, &left_strip);
-    SDL_RenderFillRect(renderer, &right_strip);
-    /* Four corners using filled circles */
-    for (dy = -rad; dy <= rad; dy++) {
-        dx = (int)(sqrt((double)(rad*rad - dy*dy)) + 0.5);
-        /* top-left */
-        SDL_RenderDrawLine(renderer, x+rad-dx, y+rad+dy, x+rad, y+rad+dy);
-        /* top-right */
-        SDL_RenderDrawLine(renderer, x+w-rad, y+rad+dy, x+w-rad+dx, y+rad+dy);
-        /* bottom-left */
-        SDL_RenderDrawLine(renderer, x+rad-dx, y+h-rad+dy, x+rad, y+h-rad+dy);
-        /* bottom-right */
-        SDL_RenderDrawLine(renderer, x+w-rad, y+h-rad+dy, x+w-rad+dx, y+h-rad+dy);
+    int row;
+    if (rad > h/2) rad = h/2;
+    if (rad > w/2) rad = w/2;
+
+    for (row = 0; row < h; row++) {
+        int x0 = x, x1 = x + w - 1;
+        if (row < rad) {
+            /* Top rounded edge */
+            int dy = rad - row;
+            int dx = rad - (int)(sqrt((double)(rad*rad - dy*dy)) + 0.5);
+            x0 += dx;
+            x1 -= dx;
+        } else if (row >= h - rad) {
+            /* Bottom rounded edge */
+            int dy = row - (h - 1 - rad);
+            int dx = rad - (int)(sqrt((double)(rad*rad - dy*dy)) + 0.5);
+            x0 += dx;
+            x1 -= dx;
+        }
+        SDL_RenderDrawLine(renderer, x0, y + row, x1, y + row);
     }
 }
 
@@ -852,21 +853,22 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             const char *ltxt = has_left  ? trim_label(translate_hp48_label(buttons[i].left),  lbuf, sizeof(lbuf)) : NULL;
             const char *rtxt = has_right ? trim_label(translate_hp48_label(buttons[i].right), rbuf, sizeof(rbuf)) : NULL;
             /* Max label width: half the button width to avoid overlap */
-            int half_w = sw / 2 + 8;
-
             if (has_left && has_right) {
-                /* Both labels: split at button center with gap */
-                int mid = sx + sw / 2;
-                draw_text_right(renderer, font_shift, ltxt,
-                                clr_lshift, mid - 6, ly, half_w);
-                draw_text_left(renderer, font_shift, rtxt,
-                               clr_rshift, mid + 6, ly, half_w);
+                /* Spread labels across full column width (button + gap).
+                 * Standard column pitch = 50 orig units * scale. */
+                int col = (50 * SC_NUM) / SC_DEN;
+                /* For wide keys (ENTER), use actual button width */
+                if (sw > col) col = sw;
+                draw_text_centered(renderer, font_shift, ltxt,
+                                   clr_lshift, sx + col/4, ly, 0);
+                draw_text_centered(renderer, font_shift, rtxt,
+                                   clr_rshift, sx + col*3/4, ly, 0);
             } else if (has_left) {
                 draw_text_centered(renderer, font_shift, ltxt,
-                                   clr_lshift, sx + sw/2, ly, sw + 10);
+                                   clr_lshift, sx + sw/2, ly, 0);
             } else if (has_right) {
                 draw_text_centered(renderer, font_shift, rtxt,
-                                   clr_rshift, sx + sw/2, ly, sw + 10);
+                                   clr_rshift, sx + sw/2, ly, 0);
             }
         }
 
@@ -877,7 +879,7 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
         }
     }
 
-    /* --- Title with version --- */
+    /* --- Title above LCD --- */
     {
 #ifndef APP_VERSION
 #define APP_VERSION "dev"
@@ -885,7 +887,7 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
         char title_buf[64];
         snprintf(title_buf, sizeof(title_buf), "MAC48GX %s", APP_VERSION);
         draw_text_left(renderer, font_title, title_buf, clr_title,
-                       LCD_X, BTN_Y - 12, 0);
+                       LCD_X, TITLE_H / 2, 0);
     }
 
     SDL_RenderPresent(renderer);
