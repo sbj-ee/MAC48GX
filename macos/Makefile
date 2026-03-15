@@ -7,7 +7,10 @@ BUILD := build
 
 CC      := clang
 VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
-CFLAGS  := -std=gnu11 -O2 \
+# Universal binary requires universal SDL2. Use native arch by default.
+# For universal: install universal SDL2, then set ARCH=-arch x86_64 -arch arm64
+ARCH    :=
+CFLAGS  := -std=gnu11 -O2 $(ARCH) \
            -I$(MAC) -I$(JNI) \
            -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
            -DAPP_VERSION='"$(VERSION)"' \
@@ -19,7 +22,7 @@ CFLAGS  := -std=gnu11 -O2 \
            -Wno-unused-function \
            -Wno-deprecated-non-prototype
 
-LDFLAGS := $(shell sdl2-config --libs) -lSDL2_ttf -lpthread
+LDFLAGS := $(ARCH) $(shell sdl2-config --libs) -lSDL2_ttf -lpthread
 
 CORE_SRCS := \
     $(JNI)/actions.c \
