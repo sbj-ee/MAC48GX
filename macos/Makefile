@@ -22,7 +22,13 @@ CFLAGS  := -std=gnu11 -O2 $(ARCH) \
            -Wno-unused-function \
            -Wno-deprecated-non-prototype
 
-LDFLAGS := $(ARCH) $(shell sdl2-config --libs) -lSDL2_ttf -lpthread
+# FRAMEWORK_DIRS: space-separated list of .framework parent dirs to embed in the
+# app bundle (used for universal builds with official SDL2 framework DMGs).
+# Leave empty for Homebrew dylib builds.
+FRAMEWORK_DIRS ?=
+RPATH_FLAG     := $(if $(FRAMEWORK_DIRS),-rpath @executable_path/../Frameworks)
+
+LDFLAGS := $(ARCH) $(shell sdl2-config --libs) -lSDL2_ttf -lpthread $(RPATH_FLAG)
 
 CORE_SRCS := \
     $(JNI)/actions.c \
@@ -124,6 +130,13 @@ bundle: all
 	@cp -n $(JNI)/rom "$(APP_DIR)/Contents/Resources/rom" 2>/dev/null || true
 	@cp -n $(JNI)/ram "$(APP_DIR)/Contents/Resources/ram" 2>/dev/null || true
 	@test -f $(JNI)/hp48 && cp -n $(JNI)/hp48 "$(APP_DIR)/Contents/Resources/hp48" 2>/dev/null || true
+	@if [ -n "$(FRAMEWORK_DIRS)" ]; then \
+		mkdir -p "$(APP_DIR)/Contents/Frameworks"; \
+		for fdir in $(FRAMEWORK_DIRS); do \
+			cp -R "$$fdir"/*.framework "$(APP_DIR)/Contents/Frameworks/"; \
+		done; \
+		echo "    Embedded frameworks from: $(FRAMEWORK_DIRS)"; \
+	fi
 	@echo "--- Built: $(APP_DIR)"
 	@echo "    Open with: open $(APP_DIR)"
 	@echo "    Or drag to /Applications"
