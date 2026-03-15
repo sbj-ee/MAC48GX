@@ -30,6 +30,7 @@
 #include "hp48.h"
 #include "debugger.h"
 #include "x48.h"
+#include "rpl.h"
 
 /* ------------------------------------------------------------------
  * Globals required by the emulator core
@@ -739,6 +740,30 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
 }
 
 /* ------------------------------------------------------------------
+ * Test mode: --test flag runs tests in a background thread while
+ * the calculator GUI remains visible and responsive.
+ * ------------------------------------------------------------------ */
+
+#include "test_cases.h"
+
+static volatile int test_finished = 0;
+static int test_exit_code = 0;
+
+static void *test_thread_func(void *arg)
+{
+    (void)arg;
+    /* Wait for emulator to boot */
+    usleep(1500000);
+    printf("Running tests (visible in calculator window)...\n");
+
+    run_all_tests();
+
+    test_exit_code = (tests_failed > 0) ? 1 : 0;
+    test_finished = 1;
+    return NULL;
+}
+
+/* ------------------------------------------------------------------
  * main
  * ------------------------------------------------------------------ */
 
@@ -751,9 +776,15 @@ int main(int argc, char **argv)
     struct sigaction sa;
     struct itimerval it;
     int pressed_btn = -1;
+    int test_mode = 0;
     char exe_dir[256];
 
-    (void)argc;
+    /* Check for --test flag */
+    {
+        int i;
+        for (i = 1; i < argc; i++)
+            if (strcmp(argv[i], "--test") == 0) test_mode = 1;
+    }
 
     /* Determine directory of executable for finding assets */
     {
@@ -848,10 +879,19 @@ int main(int argc, char **argv)
 
     /* buttons[] array is defined in x48_sdl.c */
 
+    if (test_mode)
+        SDL_SetWindowTitle(window, "HP-48 (droid48-mac) — TEST MODE");
+
     /* Start emulator thread */
     if (pthread_create(&emu_thread, NULL, emulator_thread, NULL) != 0) {
         fprintf(stderr, "pthread_create: %s\n", strerror(errno));
         return 1;
+    }
+
+    /* Launch test thread if --test mode */
+    pthread_t test_thread;
+    if (test_mode) {
+        pthread_create(&test_thread, NULL, test_thread_func, NULL);
     }
 
     /* --- SDL event loop --- */
@@ -924,6 +964,12 @@ int main(int argc, char **argv)
 
         render(renderer, lcd_tex);
         SDL_Delay(16); /* ~60 fps */
+
+        /* In test mode, exit when tests complete */
+        if (test_mode && test_finished) {
+            running = 0;
+            exit_state = 0;
+        }
     }
 
     exit_state = 0;
@@ -931,6 +977,9 @@ int main(int argc, char **argv)
     pthread_mutex_lock(&uiConditionMutex);
     pthread_cond_broadcast(&uiConditionVariable);
     pthread_mutex_unlock(&uiConditionMutex);
+
+    if (test_mode)
+        pthread_join(test_thread, NULL);
 
     pthread_join(emu_thread, NULL);
 
@@ -948,5 +997,5 @@ int main(int argc, char **argv)
     TTF_Quit();
     SDL_Quit();
 
-    return 0;
+    return test_mode ? test_exit_code : 0;
 }
