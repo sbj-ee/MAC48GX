@@ -82,12 +82,15 @@ $(BUILD)/%.o: $(JNI)/%.c
 $(BUILD)/%.o: $(MAC)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+ASSETS := ../app/src/main/assets
+
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $@
 	@echo "--- Built: $@"
 	@# Copy data files next to binary so it can find them
 	@cp -n $(JNI)/rom  $(BUILD)/rom  2>/dev/null || true
 	@cp -n $(JNI)/ram  $(BUILD)/ram  2>/dev/null || true
+	@cp -n $(ASSETS)/Asana-Math.ttf $(BUILD)/Asana-Math.ttf 2>/dev/null || true
 	@test -f $(JNI)/hp48 && cp -n $(JNI)/hp48 $(BUILD)/hp48 2>/dev/null || true
 
 run: all
@@ -114,6 +117,7 @@ bundle: all
 	@cp $(TARGET) "$(APP_DIR)/Contents/MacOS/droid48-mac"
 	@sed 's/0\.1\.1/$(VERSION)/g' $(MAC)/Info.plist > "$(APP_DIR)/Contents/Info.plist"
 	@cp $(MAC)/droid48.icns "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
+	@cp $(ASSETS)/Asana-Math.ttf "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
 	@cp -n $(JNI)/rom "$(APP_DIR)/Contents/Resources/rom" 2>/dev/null || true
 	@cp -n $(JNI)/ram "$(APP_DIR)/Contents/Resources/ram" 2>/dev/null || true
 	@test -f $(JNI)/hp48 && cp -n $(JNI)/hp48 "$(APP_DIR)/Contents/Resources/hp48" 2>/dev/null || true

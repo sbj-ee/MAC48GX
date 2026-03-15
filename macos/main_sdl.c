@@ -544,9 +544,9 @@ static const char *translate_hp48_label(const char *s)
 
     /* Control character codes used on the bottom rows */
     switch (c) {
-    case 0x01: return "NL";                /* newline (above .) */
+    case 0x01: return "\xe2\x86\xb5";     /* ↵ return arrow (above .) */
     case 0x02: return ",";                 /* comma (above .) */
-    case 0x03: return "->";                /* right arrow (above 0) */
+    case 0x03: return "\xe2\x86\x92";     /* → right arrow (above 0) */
     case 0x04: return "=";                 /* equals (above 0) */
     case 0x05: return "\xcf\x80";          /* π pi (above SPC) */
     }
@@ -558,9 +558,9 @@ static const char *translate_hp48_label(const char *s)
         case 'c': return "\xe2\x88\xab";   /* ∫ integral */
         case 'd': return "\xce\xa3";       /* Σ sigma */
         case 'n': return "x\xc2\xb2";     /* x² */
-        case 'o': return "x\xe2\x88\x9ay";   /* x√y */
-        case 'p': return "10^x";           /* 10^x */
-        case 'q': return "e^x";            /* e^x */
+        case 'o': return "\xe2\x81\xbf\xe2\x88\x9ay"; /* ⁿ√y */
+        case 'p': return "10\xe2\x81\xbf"; /* 10ⁿ */
+        case 'q': return "e\xe2\x81\xbf";  /* eⁿ */
         case 'r': return "( )";
         case 's': return "#";
         case 't': return "[ ]";
@@ -569,7 +569,7 @@ static const char *translate_hp48_label(const char *s)
         case 'w': return "\" \"";
         case 'x': return "{ }";
         case 'y': return ": :";
-        case 'z': return "<)";             /* ∠ angle (above SPC) */
+        case 'z': return "\xe2\x88\xa0";   /* ∠ angle (above SPC) */
         }
     }
 
@@ -981,17 +981,26 @@ int main(int argc, char **argv)
     {
         const char *fn = "/System/Library/Fonts/Helvetica.ttc";
         const char *fb = "/System/Library/Fonts/HelveticaNeue.ttc";
+        /* Asana-Math from droid48 assets — has all HP-48 math symbols */
+        const char *fm = "../app/src/main/assets/Asana-Math.ttf";
+        char fm_bundle[256];
+        snprintf(fm_bundle, sizeof(fm_bundle), "%s/../Resources/Asana-Math.ttf", exe_dir);
+
         font_btn    = TTF_OpenFont(fn, 18);
         font_btn_lg = TTF_OpenFont(fn, 24);
         font_btn_sm = TTF_OpenFont(fn, 15);
-        font_shift  = TTF_OpenFont(fb, 13);
         font_title  = TTF_OpenFont(fb, 13);
+        /* Try Asana-Math for shift labels: bundle → local → assets */
+        font_shift  = TTF_OpenFont(fm_bundle, 13);
+        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 13);
+        if (!font_shift) font_shift = TTF_OpenFont(fm, 13);
+        if (!font_shift) font_shift = TTF_OpenFont(fb, 13);  /* fallback */
         if (!font_btn) {
             fn = "/System/Library/Fonts/Monaco.ttf";
             font_btn    = TTF_OpenFont(fn, 12);
             font_btn_lg = TTF_OpenFont(fn, 16);
             font_btn_sm = TTF_OpenFont(fn, 10);
-            font_shift  = TTF_OpenFont(fn, 8);
+            if (!font_shift) font_shift = TTF_OpenFont(fn, 8);
             font_title  = TTF_OpenFont(fn, 11);
         }
         if (!font_btn)
