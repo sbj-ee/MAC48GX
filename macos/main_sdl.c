@@ -533,12 +533,55 @@ static const char *btn_labels[NUM_BUTTONS] = {
     "ON",   "0",    ".",    "SPC",  "+"                 /* 44-48 */
 };
 
-/* Helper: check if string is printable (skip HP-48 control chars) */
+/* Translate HP-48 special character codes to displayable text.
+ * Returns pointer to static buffer or the original string. */
+static const char *translate_hp48_label(const char *s)
+{
+    static char tbuf[32];
+    if (!s || !s[0]) return NULL;
+
+    unsigned char c = (unsigned char)s[0];
+
+    /* Control character codes used on the bottom rows */
+    switch (c) {
+    case 0x01: return "<)";                /* angle symbol */
+    case 0x02: return ",";                 /* comma */
+    case 0x03: return "\xcf\x80";          /* π pi */
+    case 0x04: return "=";                 /* equals/store */
+    case 0x05: return "->";                /* right arrow */
+    }
+
+    /* Single-letter codes representing HP-48 special chars on operator keys */
+    if (s[1] == '\0' || (s[1] == ' ' && s[2] == '\0')) {
+        switch (c) {
+        case 'b': return "\xe2\x88\x82";   /* ∂ partial derivative */
+        case 'c': return "\xe2\x88\xab";   /* ∫ integral */
+        case 'd': return "\xce\xa3";       /* Σ sigma */
+        case 'n': return "x\xc2\xb2";     /* x² */
+        case 'o': return "x\xe2\x88\x9ay";   /* x√y */
+        case 'p': return "10^x";           /* 10^x */
+        case 'q': return "e^x";            /* e^x */
+        case 'r': return "( )";
+        case 's': return "#";
+        case 't': return "[ ]";
+        case 'u': return "_";
+        case 'v': return "\xc2\xab \xc2\xbb";  /* « » */
+        case 'w': return "\" \"";
+        case 'x': return "{ }";
+        case 'y': return ": :";
+        }
+    }
+
+    /* Already printable */
+    if (c >= 0x20) return s;
+
+    return NULL;  /* unprintable, skip */
+}
+
+/* Check if a label has displayable content after translation */
 static int is_printable_label(const char *s)
 {
-    if (!s || !s[0]) return 0;
-    if ((unsigned char)s[0] < 0x20) return 0;
-    return 1;
+    return translate_hp48_label(s) != NULL;
 }
 
 /* Helper: copy label trimming trailing spaces */
@@ -790,8 +833,8 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             int has_right = is_printable_label(buttons[i].right);
             int ly = sy - 13;  /* above the button */
             char lbuf[32], rbuf[32];
-            const char *ltxt = has_left  ? trim_label(buttons[i].left,  lbuf, sizeof(lbuf)) : NULL;
-            const char *rtxt = has_right ? trim_label(buttons[i].right, rbuf, sizeof(rbuf)) : NULL;
+            const char *ltxt = has_left  ? trim_label(translate_hp48_label(buttons[i].left),  lbuf, sizeof(lbuf)) : NULL;
+            const char *rtxt = has_right ? trim_label(translate_hp48_label(buttons[i].right), rbuf, sizeof(rbuf)) : NULL;
             /* Max label width: half the button width to avoid overlap */
             int half_w = sw / 2 + 8;
 
