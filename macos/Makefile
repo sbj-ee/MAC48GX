@@ -47,7 +47,23 @@ OBJS := $(patsubst %.c,$(BUILD)/%.o,$(notdir $(SRCS)))
 
 TARGET := $(BUILD)/droid48-mac
 
-.PHONY: all clean run
+# Test build — no SDL2 dependency, uses test_harness.c instead of main_sdl.c
+TEST_SRCS := $(CORE_SRCS) $(MAC)/x48_sdl.c $(MAC)/lcd_mac.c $(MAC)/test_harness.c
+TEST_OBJS := $(patsubst %.c,$(BUILD)/%.o,$(notdir $(TEST_SRCS)))
+
+TEST_CFLAGS := -std=gnu11 -O2 \
+               -I$(MAC) -I$(JNI) \
+               -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
+               -Wno-implicit-function-declaration \
+               -Wno-incompatible-pointer-types \
+               -Wno-int-conversion \
+               -Wno-unused-variable \
+               -Wno-unused-function \
+               -Wno-deprecated-non-prototype
+
+TEST_TARGET := $(BUILD)/droid48-test
+
+.PHONY: all clean run test
 
 all: $(BUILD) $(TARGET)
 
@@ -71,6 +87,19 @@ $(TARGET): $(OBJS)
 
 run: all
 	$(TARGET)
+
+# Test target — compile test_harness.c with no SDL flags
+$(BUILD)/test_harness.o: $(MAC)/test_harness.c
+	$(CC) $(TEST_CFLAGS) -c $< -o $@
+
+$(TEST_TARGET): $(TEST_OBJS)
+	$(CC) $(TEST_OBJS) -lpthread -o $@
+	@echo "--- Built: $@"
+	@cp -n $(JNI)/rom  $(BUILD)/rom  2>/dev/null || true
+	@cp -n $(JNI)/ram  $(BUILD)/ram  2>/dev/null || true
+
+test: $(BUILD) $(TEST_TARGET)
+	$(TEST_TARGET)
 
 clean:
 	rm -rf $(BUILD)
