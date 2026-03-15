@@ -512,9 +512,9 @@ static TTF_Font *font_title    = NULL;  /* title text (11pt bold)        */
 /* ------------------------------------------------------------------
  * HP-48GX color palette
  * ------------------------------------------------------------------ */
-#define CLR_BODY_R   62
-#define CLR_BODY_G   78
-#define CLR_BODY_B   78
+#define CLR_BODY_R   35
+#define CLR_BODY_G   45
+#define CLR_BODY_B   45
 
 static const SDL_Color clr_white   = { 220, 220, 220, 255 };
 static const SDL_Color clr_lshift  = { 190, 140, 230, 255 };  /* purple — left shift (◄) */
@@ -762,20 +762,15 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             /* Menu keys A-F: light gray */
             SDL_SetRenderDrawColor(renderer, 160, 165, 165, 255);
         } else if (i == 44) {
-            /* ON button: slightly distinct dark green-gray */
-            SDL_SetRenderDrawColor(renderer, 28, 38, 32, 255);
+            /* ON button: very dark green-black */
+            SDL_SetRenderDrawColor(renderer, 5, 12, 8, 255);
         } else {
-            /* All other keys: dark/black */
-            SDL_SetRenderDrawColor(renderer, 32, 32, 36, 255);
+            /* All other keys: black */
+            SDL_SetRenderDrawColor(renderer, 8, 8, 10, 255);
         }
         {
             int rad = (i < 6) ? 4 : 5;
             fill_rounded_rect(renderer, sx, sy, sw, sh, rad);
-            /* Subtle highlight line on top edge for 3D look */
-            if (!buttons[i].pressed && i >= 6) {
-                SDL_SetRenderDrawColor(renderer, 55, 55, 60, 255);
-                SDL_RenderDrawLine(renderer, sx + rad, sy + 1, sx + sw - rad, sy + 1);
-            }
         }
 
         /* ---- Button face label ---- */
@@ -939,9 +934,13 @@ static int test_exit_code = 0;
 
 static void *test_thread_func(void *arg)
 {
-    (void)arg;
+    int delay = arg ? *(int *)arg : 0;
     /* Wait for emulator to boot */
     usleep(1500000);
+    if (delay > 0) {
+        printf("Starting tests in %d seconds...\n", delay);
+        sleep(delay);
+    }
     printf("Running tests (visible in calculator window)...\n");
 
     run_all_tests();
@@ -965,13 +964,17 @@ int main(int argc, char **argv)
     struct itimerval it;
     int pressed_btn = -1;
     int test_mode = 0;
+    static int test_delay = 0;
     char exe_dir[256];
 
-    /* Check for --test flag */
+    /* Check for --test and --delay flags */
     {
         int i;
-        for (i = 1; i < argc; i++)
+        for (i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--test") == 0) test_mode = 1;
+            if (strcmp(argv[i], "--delay") == 0 && i+1 < argc)
+                test_delay = atoi(argv[++i]);
+        }
     }
 
     /* Determine directory of executable for finding assets */
@@ -1043,10 +1046,10 @@ int main(int argc, char **argv)
         font_title  = TTF_OpenFont(fb, 14);
         /* Try Asana-Math for shift labels: bundle → local → assets */
         /* Asana-Math: has all HP-48 math symbols (∂ ∫ Σ π ∠ → ↵ ²) */
-        font_shift  = TTF_OpenFont(fm_bundle, 14);
-        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 14);
-        if (!font_shift) font_shift = TTF_OpenFont(fm, 14);
-        if (!font_shift) font_shift = TTF_OpenFont(fb, 14);
+        font_shift  = TTF_OpenFont(fm_bundle, 16);
+        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 16);
+        if (!font_shift) font_shift = TTF_OpenFont(fm, 16);
+        if (!font_shift) font_shift = TTF_OpenFont(fb, 16);
         if (!font_btn) {
             fn = "/System/Library/Fonts/Monaco.ttf";
             font_btn    = TTF_OpenFont(fn, 12);
@@ -1116,7 +1119,7 @@ int main(int argc, char **argv)
     /* Launch test thread if --test mode */
     pthread_t test_thread;
     if (test_mode) {
-        pthread_create(&test_thread, NULL, test_thread_func, NULL);
+        pthread_create(&test_thread, NULL, test_thread_func, &test_delay);
     }
 
     /* Cursors */
