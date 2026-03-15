@@ -515,9 +515,9 @@ static TTF_Font *font_title    = NULL;  /* title text (11pt bold)        */
 #define CLR_BODY_B   78
 
 static const SDL_Color clr_white   = { 220, 220, 220, 255 };
-static const SDL_Color clr_lshift  = { 130, 210, 190, 255 };  /* green/teal — left shift */
-static const SDL_Color clr_rshift  = { 190, 140, 230, 255 };  /* purple — right shift */
-static const SDL_Color clr_alpha   = { 130, 210, 190, 255 };  /* same as left shift */
+static const SDL_Color clr_lshift  = { 190, 140, 230, 255 };  /* purple — left shift (◄) */
+static const SDL_Color clr_rshift  = { 130, 210, 190, 255 };  /* green/teal — right shift (►) */
+static const SDL_Color clr_alpha   = { 130, 210, 190, 255 };  /* green — same as right shift */
 static const SDL_Color clr_title   = { 200, 200, 200, 255 };
 
 /* Primary button face labels — using ASCII where Unicode fails */
@@ -544,11 +544,11 @@ static const char *translate_hp48_label(const char *s)
 
     /* Control character codes used on the bottom rows */
     switch (c) {
-    case 0x01: return "<)";                /* angle symbol */
-    case 0x02: return ",";                 /* comma */
-    case 0x03: return "\xcf\x80";          /* π pi */
-    case 0x04: return "=";                 /* equals/store */
-    case 0x05: return "->";                /* right arrow */
+    case 0x01: return "NL";                /* newline (above .) */
+    case 0x02: return ",";                 /* comma (above .) */
+    case 0x03: return "->";                /* right arrow (above 0) */
+    case 0x04: return "=";                 /* equals (above 0) */
+    case 0x05: return "\xcf\x80";          /* π pi (above SPC) */
     }
 
     /* Single-letter codes representing HP-48 special chars on operator keys */
@@ -569,6 +569,7 @@ static const char *translate_hp48_label(const char *s)
         case 'w': return "\" \"";
         case 'x': return "{ }";
         case 'y': return ": :";
+        case 'z': return "<)";             /* ∠ angle (above SPC) */
         }
     }
 
@@ -983,7 +984,7 @@ int main(int argc, char **argv)
         font_btn    = TTF_OpenFont(fn, 18);
         font_btn_lg = TTF_OpenFont(fn, 24);
         font_btn_sm = TTF_OpenFont(fn, 15);
-        font_shift  = TTF_OpenFont(fb, 11);
+        font_shift  = TTF_OpenFont(fb, 13);
         font_title  = TTF_OpenFont(fb, 13);
         if (!font_btn) {
             fn = "/System/Library/Fonts/Monaco.ttf";

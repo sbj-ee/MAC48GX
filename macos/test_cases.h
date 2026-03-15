@@ -922,6 +922,174 @@ static void test_matrices(void)
     check_result("det(inv(I_2x2))", "1"); drop();
 }
 
+static void test_shifted_functions(void)
+{
+    printf("\n--- Shifted Key Functions (per HP-48G manual Ch 12) ---\n");
+
+    /* LEFT-SHIFT functions (purple ◄ key) */
+
+    /* LS+SIN = ASIN: asin(0.5) = 30 */
+    type_number("0.5"); lshift_key(BTN_SIN);
+    check_result("LS+SIN=ASIN(.5)", "30"); drop();
+
+    /* LS+COS = ACOS: acos(0) = 90 */
+    type_number("0"); lshift_key(BTN_COS);
+    check_result("LS+COS=ACOS(0)", "90"); drop();
+
+    /* LS+TAN = ATAN: atan(1) = 45 */
+    type_number("1"); lshift_key(BTN_TAN);
+    check_result("LS+TAN=ATAN(1)", "45"); drop();
+
+    /* LS+SQRT = x²: 7² = 49 */
+    type_number("7"); lshift_key(BTN_SQRT);
+    check_result("LS+SQRT=x^2(7)", "49"); drop();
+
+    /* LS+y^x = 10^x: 10^3 = 1000 */
+    type_number("3"); lshift_key(BTN_POWER);
+    check_result("LS+y^x=10^x(3)", "1000"); drop();
+
+    /* LS+1/x = e^x: e^0 = 1 */
+    type_number("0"); lshift_key(BTN_INV);
+    check_result("LS+1/x=e^x(0)", "1"); drop();
+
+    /* LS+1/x = e^x: e^2 ≈ 7.38905609893 */
+    type_number("2"); lshift_key(BTN_INV);
+    check_result("LS+1/x=e^x(2)", "7.38905609893"); drop();
+
+    /* RIGHT-SHIFT functions (green ► key) */
+
+    /* RS+y^x = LOG: log(10) = 1 */
+    type_number("10"); rshift_key(BTN_POWER);
+    check_result("RS+y^x=LOG(10)", "1"); drop();
+
+    /* RS+y^x = LOG: log(10000) = 4 */
+    type_number("10000"); rshift_key(BTN_POWER);
+    check_result("RS+y^x=LOG(10000)", "4"); drop();
+
+    /* RS+1/x = LN: ln(1) = 0 */
+    type_number("1"); rshift_key(BTN_INV);
+    check_result("RS+1/x=LN(1)", "0"); drop();
+
+    /* RS+1/x = LN: ln(e²) = 2 */
+    type_number("2"); lshift_key(BTN_INV);   /* e^2 */
+    rshift_key(BTN_INV);                      /* LN(e^2) = 2 */
+    check_result("RS+1/x=LN(e^2)", "2"); drop();
+
+    /* Combined: verify 10^x and LOG are inverses */
+    type_number("42"); rshift_key(BTN_POWER);  /* LOG(42) */
+    lshift_key(BTN_POWER);                      /* 10^(LOG(42)) */
+    check_result("10^LOG(42)=42", "42"); drop();
+
+    /* Combined: verify e^x and LN are inverses */
+    type_number("13"); rshift_key(BTN_INV);   /* LN(13) */
+    lshift_key(BTN_INV);                       /* e^(LN(13)) */
+    check_result("e^LN(13)=13", "13"); drop();
+
+    /* Combined: verify x² and √ are inverses */
+    type_number("6"); lshift_key(BTN_SQRT);   /* 6² = 36 */
+    press_key(BTN_SQRT);                       /* √36 = 6 */
+    check_result("sqrt(6^2)=6", "6"); drop();
+}
+
+static void test_stack_manipulation(void)
+{
+    printf("\n--- Stack Manipulation (per HP-48G manual Ch 3) ---\n");
+    char buf[65536];
+
+    /* Test SWAP: push 10, push 20, SWAP → level 1=10, level 2=20 */
+    /* On HP-48, when no cursor active, pressing RIGHT arrow = SWAP */
+    type_number("10"); press_key(BTN_ENTER);
+    type_number("20"); press_key(BTN_ENTER);
+    wait_computation(300);
+    /* SWAP via left-shift + RIGHT */
+    lshift_key(BTN_RIGHT);
+    wait_computation(500);
+    tests_run++;
+    read_stack_level(1, buf, sizeof(buf));
+    if (strstr(buf, "10")) { printf("  PASS: SWAP level 1 = 10\n"); tests_passed++; }
+    else { printf("  FAIL: SWAP level 1 — expected 10, got \"%s\"\n", buf); tests_failed++; }
+    tests_run++;
+    read_stack_level(2, buf, sizeof(buf));
+    if (strstr(buf, "20")) { printf("  PASS: SWAP level 2 = 20\n"); tests_passed++; }
+    else { printf("  FAIL: SWAP level 2 — expected 20, got \"%s\"\n", buf); tests_failed++; }
+    drop(); drop();
+
+    /* Test DROP: push 100, push 200, DROP → level 1=100 */
+    type_number("100"); press_key(BTN_ENTER);
+    type_number("200"); press_key(BTN_ENTER);
+    wait_computation(300);
+    drop();
+    check_result("DROP leaves 100", "100"); drop();
+
+    /* Test DUP: push 42, press ENTER (DUP) → both levels = 42 */
+    type_number("42"); press_key(BTN_ENTER);
+    press_key(BTN_ENTER);  /* DUP */
+    wait_computation(300);
+    tests_run++;
+    read_stack_level(1, buf, sizeof(buf));
+    if (strstr(buf, "42")) { printf("  PASS: DUP level 1 = 42\n"); tests_passed++; }
+    else { printf("  FAIL: DUP level 1 — expected 42, got \"%s\"\n", buf); tests_failed++; }
+    tests_run++;
+    read_stack_level(2, buf, sizeof(buf));
+    if (strstr(buf, "42")) { printf("  PASS: DUP level 2 = 42\n"); tests_passed++; }
+    else { printf("  FAIL: DUP level 2 — expected 42, got \"%s\"\n", buf); tests_failed++; }
+    drop(); drop();
+
+    /* Test CLEAR: push values, CLEAR → empty stack */
+    type_number("1"); press_key(BTN_ENTER);
+    type_number("2"); press_key(BTN_ENTER);
+    type_number("3"); press_key(BTN_ENTER);
+    wait_computation(300);
+    /* CLEAR = left-shift + DEL */
+    lshift_key(BTN_DEL);
+    wait_computation(500);
+    tests_run++;
+    if (read_stack_level(1, buf, sizeof(buf)) != 0) {
+        printf("  PASS: CLEAR emptied stack\n"); tests_passed++;
+    } else {
+        printf("  FAIL: CLEAR — stack not empty, got \"%s\"\n", buf); tests_failed++;
+    }
+}
+
+static void test_eex_notation(void)
+{
+    printf("\n--- EEX Scientific Notation (per HP-48G manual Ch 2) ---\n");
+
+    /* 1.5E3 = 1500 */
+    type_number("1.5"); press_key(BTN_EEX); type_number("3");
+    press_key(BTN_ENTER);
+    check_result("1.5E3", "1500"); drop();
+
+    /* 2E-3 = 0.002 */
+    type_number("2"); press_key(BTN_EEX); type_number("3"); press_key(BTN_NEG);
+    press_key(BTN_ENTER);
+    check_result("2E-3", ".002"); drop();
+
+    /* 6.022E23 (Avogadro-like) */
+    type_number("6.022"); press_key(BTN_EEX); type_number("23");
+    press_key(BTN_ENTER);
+    check_result("6.022E23", "6.022E23"); drop();
+
+    /* -1.6E-19 (electron charge-like) */
+    type_number("1.6"); press_key(BTN_NEG); press_key(BTN_EEX);
+    type_number("19"); press_key(BTN_NEG);
+    press_key(BTN_ENTER);
+    check_result("-1.6E-19", "-1.6E-19"); drop();
+
+    /* Arithmetic with EEX: 2E3 + 3E3 = 5000 */
+    type_number("2"); press_key(BTN_EEX); type_number("3"); press_key(BTN_ENTER);
+    type_number("3"); press_key(BTN_EEX); type_number("3"); press_key(BTN_ENTER);
+    press_key(BTN_PLUS);
+    check_result("2E3+3E3", "5000"); drop();
+
+    /* 1E6 * 1E-3 = 1000 */
+    type_number("1"); press_key(BTN_EEX); type_number("6"); press_key(BTN_ENTER);
+    type_number("1"); press_key(BTN_EEX); type_number("3"); press_key(BTN_NEG);
+    press_key(BTN_ENTER);
+    press_key(BTN_MUL);
+    check_result("1E6*1E-3", "1000"); drop();
+}
+
 /* --- Run all tests --- */
 static void run_all_tests(void)
 {
@@ -953,10 +1121,9 @@ static void run_all_tests(void)
     test_atan2_via_atan();           clear_stack();
     test_inverse_trig_roundtrips(); clear_stack();
     test_polar_rectangular();       clear_stack();
-    /* Note: vector/matrix tests require alpha text entry which has
-     * timing issues with the emulator's keyboard event queue.
-     * The computation is correct (ROM handles it) — the issue is
-     * purely automated alpha character input. */
+    test_shifted_functions();        clear_stack();
+    test_stack_manipulation();       clear_stack();
+    test_eex_notation();             clear_stack();
     test_edge_cases();
 
     printf("\n======================\n");
