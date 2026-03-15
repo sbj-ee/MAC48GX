@@ -688,11 +688,7 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
 
         /* ---- Button face label ---- */
         if (i < 6) {
-            /* Menu keys: draw a small raised rectangle */
-            int mx = sx + sw/2 - 14, my = sy + sh/2 - 6;
-            SDL_Rect mr = { mx, my, 28, 12 };
-            SDL_SetRenderDrawColor(renderer, 200, 205, 205, 255);
-            SDL_RenderFillRect(renderer, &mr);
+            /* Menu keys: solid light gray, no additional decoration */
         } else if (i == 10) {
             /* UP arrow triangle */
             int cx = sx + sw/2, cy = sy + sh/2;
