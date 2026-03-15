@@ -29,6 +29,7 @@
 #include "hp48_emu.h"
 #include "hp48.h"
 #include "debugger.h"
+#include "device.h"
 #include "x48.h"
 #include "rpl.h"
 
@@ -319,6 +320,74 @@ typedef struct {
 extern button_t buttons[];
 
 #define NUM_BUTTONS 49
+
+/* ------------------------------------------------------------------
+ * Audio — SDL2 audio callback generates square wave from speaker_counter
+ * ------------------------------------------------------------------ */
+
+#define AUDIO_RATE    44100
+#define AUDIO_SAMPLES 1024
+
+static SDL_AudioDeviceID audio_dev = 0;
+static volatile int audio_delta = 0;   /* samples per half-cycle (0 = silent) */
+static int audio_phase = 0;
+static char audio_speaker_state = 0;
+
+static void audio_callback(void *userdata, Uint8 *stream, int len)
+{
+    Sint16 *buf = (Sint16 *)stream;
+    int samples = len / (int)sizeof(Sint16);
+    int i;
+    int delta = audio_delta;  /* snapshot — written by main thread */
+    (void)userdata;
+
+    if (delta <= 0) {
+        memset(stream, 0, len);
+        return;
+    }
+
+    for (i = 0; i < samples; i++) {
+        audio_phase--;
+        if (audio_phase <= 0) {
+            audio_phase = delta;
+            audio_speaker_state = !audio_speaker_state;
+        }
+        buf[i] = audio_speaker_state ? 8000 : -8000;
+    }
+}
+
+/* Called from the main loop ~60 times/sec.
+ * Reads device.speaker_counter and updates audio_delta. */
+static void update_audio(void)
+{
+    static int accum_frames = 0;
+    static int accum_count  = 0;
+
+    accum_count += device.speaker_counter;
+    device.speaker_counter = 0;
+    accum_frames++;
+
+    /* Accumulate over ~6 frames (~100ms at 60fps) for stable frequency */
+    if (accum_frames >= 6) {
+        if (accum_count > 0) {
+            /* speaker_counter counts toggles in the period.
+             * freq = toggles / (accum_frames * 16.67ms) / 2 (two toggles per cycle)
+             * But actually each toggle is a half-cycle, so:
+             * freq = toggles / (accum_frames / 60.0) / 2 */
+            double dt = accum_frames / 60.0;
+            double freq = accum_count / dt / 2.0;
+            if (freq > 20.0 && freq < 20000.0) {
+                audio_delta = (int)(AUDIO_RATE / (freq * 2.0));
+            } else {
+                audio_delta = 0;
+            }
+        } else {
+            audio_delta = 0;
+        }
+        accum_frames = 0;
+        accum_count  = 0;
+    }
+}
 
 /* Convert original button coordinate to screen coordinate */
 static int btn_to_screen_x(int bx)
@@ -814,9 +883,26 @@ int main(int argc, char **argv)
     setitimer(ITIMER_REAL, &it, NULL);
 
     /* SDL2 init */
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
         fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
         return 1;
+    }
+
+    /* Audio init */
+    {
+        SDL_AudioSpec want, have;
+        memset(&want, 0, sizeof(want));
+        want.freq     = AUDIO_RATE;
+        want.format   = AUDIO_S16SYS;
+        want.channels = 1;
+        want.samples  = AUDIO_SAMPLES;
+        want.callback = audio_callback;
+        audio_dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+        if (audio_dev > 0) {
+            SDL_PauseAudioDevice(audio_dev, 0);  /* start playing */
+        } else {
+            fprintf(stderr, "SDL audio: %s (sound disabled)\n", SDL_GetError());
+        }
     }
 
     /* Font init */
@@ -963,6 +1049,7 @@ int main(int argc, char **argv)
         }
 
         render(renderer, lcd_tex);
+        update_audio();
         SDL_Delay(16); /* ~60 fps */
 
         /* In test mode, exit when tests complete */
@@ -986,6 +1073,8 @@ int main(int argc, char **argv)
     /* Save state */
     write_files();
 
+    if (audio_dev > 0)
+        SDL_CloseAudioDevice(audio_dev);
     SDL_DestroyTexture(lcd_tex);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
