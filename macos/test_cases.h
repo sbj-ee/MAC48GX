@@ -1,5 +1,7 @@
 /*
  * test_cases.h — Shared test functions for droid48-mac.
+ * Copyright (C) 2026  droid48-mac contributors
+ * Licensed under the GNU General Public License v3.0.
  *
  * Used by both test_harness.c (headless) and main_sdl.c (--test GUI mode).
  * All functions assume the emulator is already running in a background thread.

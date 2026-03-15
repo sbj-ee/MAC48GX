@@ -1,5 +1,7 @@
 /*
- * test_harness.c — Headless test runner for droid48-mac HP-48 emulator.
+ * test_harness.c — Headless test runner for droid48-mac emulator.
+ * Copyright (C) 2026  droid48-mac contributors
+ * Licensed under the GNU General Public License v3.0.
  *
  * Build:  make test       (from macos/ directory)
  * Run:    build/droid48-test

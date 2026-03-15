@@ -140,12 +140,31 @@ This emulator requires an HP-48 ROM image. The ROM included in the repository (`
 - Dumping your own HP-48 calculator
 - The [HP Museum](https://www.hpmuseum.org/)
 
-## Credits
+## Credits and Acknowledgements
 
-- **x48** by Eddie C. Dost — original HP-48 emulator for X11 (1994)
-- **droid48** by shagr4th — Android port of x48
-- **droid48-mac** — macOS port using SDL2
+This project builds on the work of several authors and open-source projects:
+
+### x48 — The Original Emulator
+- **Eddie C. Dost** (ecd@dressler.de) — Author of [x48](http://x48.berlios.de/), the original HP-48 emulator for X11, first released in 1994. The Saturn CPU emulation core, memory management, device simulation, LCD rendering, RPL object decoding, and debugger are all his work. Copyright (C) 1994-2005 Eddie C. Dost. Licensed under the GNU General Public License v2 or later.
+- **G. Allen Morris III** — Maintained x48 and contributed build system updates (config.h, autotools).
+
+### droid48 — The Android Port
+- **Arnaud Brochard** (shagr4th) — Author of [droid48](https://github.com/shagr4th/droid48), the Android port of x48. Adapted the X11 display and input layer to Android via JNI, added touch input, LCD rendering to Android canvas, and audio support. Licensed under GPL-3.0.
+- **Denis Bernard** — Contributor to droid48.
+
+### droid48-mac — This macOS Port
+- Replaces the Android JNI/UI layer with SDL2 for macOS.
+- All new code in `macos/` is also licensed under GPL-3.0.
+
+### Other Acknowledgements
+- **Jamie Zawinski** (jwz@lucid.com) — X resource handling code in `resources.c`, from xscreensaver. Copyright (c) 1992, used with permission (MIT-style license).
+- **SDL2** by the [SDL Project](https://www.libsdl.org/) — Cross-platform multimedia library used for display, input, and audio. Licensed under the zlib license.
+- **SDL2_ttf** — TrueType font rendering for SDL2. Licensed under the zlib license.
 
 ## License
 
-GPL-3.0 — see [COPYING](COPYING) for details.
+This project is licensed under the **GNU General Public License v3.0** (GPL-3.0), consistent with the droid48 upstream project. The original x48 emulator core is licensed under GPL v2 or later.
+
+See [COPYING](COPYING) for the full GPL-3.0 license text.
+
+The emulator core source files in `app/src/main/jni/` retain their original copyright headers from Eddie C. Dost (GPL v2+). The macOS port files in `macos/` are new code licensed under GPL-3.0.

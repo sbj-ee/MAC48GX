@@ -1,6 +1,14 @@
 /*
  * x48_sdl.c - macOS/SDL2 replacement for x48.c (Android JNI version).
  *
+ * Copyright (C) 2026  droid48-mac contributors
+ * Based on x48 by Eddie C. Dost (Copyright (C) 1994-2005)
+ * and droid48 by Arnaud Brochard (shagr4th)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License v3.0 as published
+ * by the Free Software Foundation.
+ *
  * Provides:
  *  - buttons[] array with HP-48 key codes and layout coordinates
  *  - button_pressed() / button_released() / key_event()

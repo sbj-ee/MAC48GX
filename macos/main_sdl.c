@@ -1,5 +1,15 @@
 /*
- * main_sdl.c - macOS/SDL2 main for droid48/x48 HP-48 emulator.
+ * main_sdl.c - macOS/SDL2 main for droid48/x48 emulator.
+ *
+ * Copyright (C) 2026  droid48-mac contributors
+ * Based on x48 by Eddie C. Dost (Copyright (C) 1994-2005)
+ * and droid48 by Arnaud Brochard (shagr4th)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License v3.0 as published
+ * by the Free Software Foundation.
+ *
+ * Original x48 emulator:
  *
  * Responsibilities:
  *  - Set up data file paths (~/.droid48/)
@@ -493,7 +503,7 @@ static TTF_Font *font_btn      = NULL;  /* button face label (13pt)      */
 static TTF_Font *font_btn_lg   = NULL;  /* large number labels (16pt)    */
 static TTF_Font *font_btn_sm   = NULL;  /* small labels on menu/ENTER    */
 static TTF_Font *font_shift    = NULL;  /* shift/alpha labels (9pt)      */
-static TTF_Font *font_title    = NULL;  /* HP 48GX title (11pt bold)     */
+static TTF_Font *font_title    = NULL;  /* title text (11pt bold)        */
 
 /* ------------------------------------------------------------------
  * HP-48GX color palette
@@ -806,8 +816,8 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
         }
     }
 
-    /* --- Title: HP 48GX --- */
-    draw_text_left(renderer, font_title, "HP 48GX", clr_title,
+    /* --- Title --- */
+    draw_text_left(renderer, font_title, "droid48", clr_title,
                    LCD_X, BTN_Y - 12, 0);
 
     SDL_RenderPresent(renderer);
@@ -937,7 +947,7 @@ int main(int argc, char **argv)
             TTF_SetFontStyle(font_title, TTF_STYLE_BOLD);
     }
 
-    window = SDL_CreateWindow("HP-48 (droid48-mac)",
+    window = SDL_CreateWindow("droid48-mac",
                               SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               WIN_W, WIN_H, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!window) {
@@ -971,7 +981,7 @@ int main(int argc, char **argv)
     /* buttons[] array is defined in x48_sdl.c */
 
     if (test_mode)
-        SDL_SetWindowTitle(window, "HP-48 (droid48-mac) — TEST MODE");
+        SDL_SetWindowTitle(window, "droid48-mac — TEST MODE");
 
     /* Start emulator thread */
     if (pthread_create(&emu_thread, NULL, emulator_thread, NULL) != 0) {

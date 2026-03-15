@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>HP-48GX</string>
+    <string>droid48</string>
     <key>CFBundleDisplayName</key>
-    <string>HP-48GX Calculator</string>
+    <string>droid48 Calculator</string>
     <key>CFBundleIdentifier</key>
     <string>com.droid48.mac</string>
     <key>CFBundleVersion</key>
@@ -17,9 +17,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleSignature</key>
-    <string>HP48</string>
+    <string>D48M</string>
     <key>CFBundleIconFile</key>
-    <string>HP48GX</string>
+    <string>droid48</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>

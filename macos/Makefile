@@ -63,7 +63,7 @@ TEST_CFLAGS := -std=gnu11 -O2 \
 
 TEST_TARGET := $(BUILD)/droid48-test
 
-APP_NAME   := HP-48GX.app
+APP_NAME   := droid48.app
 APP_DIR    := $(BUILD)/$(APP_NAME)
 
 .PHONY: all clean run test bundle
@@ -111,7 +111,7 @@ bundle: all
 	@mkdir -p "$(APP_DIR)/Contents/Resources"
 	@cp $(TARGET) "$(APP_DIR)/Contents/MacOS/droid48-mac"
 	@cp $(MAC)/Info.plist "$(APP_DIR)/Contents/"
-	@cp $(MAC)/HP48GX.icns "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
+	@cp $(MAC)/droid48.icns "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
 	@cp -n $(JNI)/rom "$(APP_DIR)/Contents/Resources/rom" 2>/dev/null || true
 	@cp -n $(JNI)/ram "$(APP_DIR)/Contents/Resources/ram" 2>/dev/null || true
 	@test -f $(JNI)/hp48 && cp -n $(JNI)/hp48 "$(APP_DIR)/Contents/Resources/hp48" 2>/dev/null || true

@@ -1,6 +1,12 @@
 /*
  * lcd_mac.c - LCD rendering for macOS port of droid48/x48.
  * This is lcd.c from the JNI directory with JNI functions removed.
+ *
+ * Original Copyright (C) 1994  Eddie C. Dost (ecd@dressler.de)
+ * Android modifications by Arnaud Brochard (shagr4th)
+ * macOS adaptation Copyright (C) 2026  droid48-mac contributors
+ *
+ * Licensed under the GNU General Public License v2 or later.
  * The disp_buf_short / disp_buf_header_short buffers are read directly
  * by the SDL2 render loop in main_sdl.c.
  */
