@@ -1090,6 +1090,101 @@ static void test_eex_notation(void)
     check_result("1E6*1E-3", "1000"); drop();
 }
 
+static void test_angle_modes(void)
+{
+    /*
+     * HP-48G manual Ch 4, page 4-3: Angle Modes
+     *
+     * DEG: 1/360 of circle (default, no annunciator)
+     * RAD: 1/2π of circle (RAD annunciator)
+     * GRAD: 1/400 of circle (GRAD annunciator)
+     *
+     * Toggle DEG ↔ RAD: left-shift + MTH (button 34 + button 6)
+     * The MODES ANGL menu gives DEG, RAD, GRAD via menu keys.
+     *
+     * To access MODES ANGL menu:
+     *   left-shift + MODES → command menu
+     *   MODES is on right-shift + CST (button 39 + button 8)
+     *   But simpler: LS+MTH toggles DEG/RAD directly.
+     */
+    printf("\n--- Angle Modes (HP-48G manual Ch 4) ---\n");
+
+    /* Ensure we start in DEG mode by pressing LS+MTH twice
+     * (toggle to RAD, then back to DEG) */
+    lshift_key(6);  /* toggle → RAD */
+    wait_computation(300);
+    lshift_key(6);  /* toggle → DEG */
+    wait_computation(300);
+
+    /* === DEG MODE === */
+    /* sin(90°) = 1 in DEG mode */
+    type_number("90"); press_key(BTN_SIN);
+    check_result("DEG: sin(90)", "1"); drop();
+
+    /* cos(60°) = 0.5 in DEG mode */
+    type_number("60"); press_key(BTN_COS);
+    check_result("DEG: cos(60)", ".5"); drop();
+
+    /* tan(45°) = 1 in DEG mode */
+    type_number("45"); press_key(BTN_TAN);
+    check_result("DEG: tan(45)", "1"); drop();
+
+    /* asin(1) = 90° in DEG mode */
+    type_number("1"); lshift_key(BTN_SIN);
+    check_result("DEG: asin(1)", "90"); drop();
+
+    /* === SWITCH TO RAD MODE === */
+    /* LS+MTH toggles DEG → RAD (manual page 4-4) */
+    lshift_key(6);  /* MTH button = button 6 */
+    wait_computation(500);
+
+    /* sin(π/2) = 1 in RAD mode */
+    /* π/2 ≈ 1.5707963268 */
+    type_number("1.5707963268");
+    press_key(BTN_SIN);
+    check_result("RAD: sin(pi/2)", "1"); drop();
+
+    /* cos(0) = 1 in RAD mode */
+    type_number("0"); press_key(BTN_COS);
+    check_result("RAD: cos(0)", "1"); drop();
+
+    /* sin(π/6) = 0.5 in RAD mode */
+    /* π/6 ≈ 0.5235987756 */
+    type_number("0.5235987756");
+    press_key(BTN_SIN);
+    check_result("RAD: sin(pi/6)", ".5"); drop();
+
+    /* tan(π/4) = 1 in RAD mode */
+    /* π/4 ≈ 0.7853981634 */
+    type_number("0.7853981634");
+    press_key(BTN_TAN);
+    check_result("RAD: tan(pi/4)", "1"); drop();
+
+    /* asin(1) = π/2 ≈ 1.5707963268 in RAD mode */
+    type_number("1"); lshift_key(BTN_SIN);
+    check_result("RAD: asin(1)", "1.57079632679"); drop();
+
+    /* acos(0.5) = π/3 ≈ 1.0471975512 in RAD mode */
+    type_number("0.5"); lshift_key(BTN_COS);
+    check_result("RAD: acos(0.5)", "1.0471975512"); drop();
+
+    /* atan(1) = π/4 ≈ 0.785398163397 in RAD mode */
+    type_number("1"); lshift_key(BTN_TAN);
+    check_result("RAD: atan(1)", ".785398163397"); drop();
+
+    /* === SWITCH BACK TO DEG MODE === */
+    lshift_key(6);
+    wait_computation(500);
+
+    /* Verify we're back in DEG: sin(90) should be 1 again */
+    type_number("90"); press_key(BTN_SIN);
+    check_result("DEG restored: sin(90)", "1"); drop();
+
+    /* Verify DEG: asin(1) = 90 */
+    type_number("1"); lshift_key(BTN_SIN);
+    check_result("DEG restored: asin(1)", "90"); drop();
+}
+
 /* --- Run all tests --- */
 static void run_all_tests(void)
 {
@@ -1124,6 +1219,7 @@ static void run_all_tests(void)
     test_shifted_functions();        clear_stack();
     test_stack_manipulation();       clear_stack();
     test_eex_notation();             clear_stack();
+    test_angle_modes();              clear_stack();
     test_edge_cases();
 
     printf("\n======================\n");
