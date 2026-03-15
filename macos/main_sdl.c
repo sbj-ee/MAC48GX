@@ -1058,8 +1058,10 @@ int main(int argc, char **argv)
         }
         if (!font_btn)
             fprintf(stderr, "Warning: could not load fonts\n");
-        if (font_title)
-            TTF_SetFontStyle(font_title, TTF_STYLE_BOLD);
+        if (font_btn)    TTF_SetFontStyle(font_btn, TTF_STYLE_BOLD);
+        if (font_btn_lg) TTF_SetFontStyle(font_btn_lg, TTF_STYLE_BOLD);
+        if (font_btn_sm) TTF_SetFontStyle(font_btn_sm, TTF_STYLE_BOLD);
+        if (font_title)  TTF_SetFontStyle(font_title, TTF_STYLE_BOLD);
     }
 
     {
