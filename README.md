@@ -9,12 +9,14 @@ This port compiles the C emulator core natively for macOS and replaces the Andro
 ## Features
 
 - Full HP-48GX Saturn CPU emulation (unchanged C core from x48/droid48)
-- SDL2 window with HP-48GX calculator face
+- SDL2 window styled after the real HP-48GX calculator face
 - Labeled buttons with left-shift (green), right-shift (purple), and alpha (green) annotations
 - Mouse click and keyboard input
+- Sound output (speaker beeps and tones via SDL2 audio)
 - HiDPI/Retina display support
 - Calculator state saved to `~/.droid48/` on quit
 - SIGALRM-based emulator timing (50 Hz)
+- Automated test suite (100 tests) with headless and visual modes
 
 ## Prerequisites
 
@@ -53,6 +55,25 @@ make
 
 On first launch, ROM and RAM files are copied to `~/.droid48/`. If no ROM is found, you will need to place a valid HP-48 ROM image at `~/.droid48/rom`.
 
+## Testing
+
+### Headless (no GUI, for CI)
+
+```bash
+cd macos
+make test
+```
+
+Runs 100 automated tests covering arithmetic, trig, inverse trig, logarithms, exponentials, powers, roots, polar conversions, atan2, stack operations, and edge cases. No SDL2 dependency — links only against the emulator core + pthread.
+
+### Visual (with calculator GUI)
+
+```bash
+./macos/build/droid48-mac --test
+```
+
+Runs the same test suite with the calculator window visible, so you can watch button presses and stack results in real time. The window title shows "TEST MODE" and the app exits when tests complete.
+
 ## Keyboard Shortcuts
 
 | Key | Calculator Button |
@@ -60,7 +81,7 @@ On first launch, ROM and RAM files are copied to `~/.droid48/`. If no ROM is fou
 | `0`-`9` | Number keys |
 | `+` `-` `*` `/` | Arithmetic |
 | `Enter` | ENTER |
-| `Backspace` | Backspace (←) |
+| `Backspace` | Backspace |
 | `Delete` | DEL |
 | `Escape` | ON |
 | Arrow keys | Cursor keys |
@@ -76,27 +97,32 @@ On first launch, ROM and RAM files are copied to `~/.droid48/`. If no ROM is fou
 
 ```
 macos/
-├── main_sdl.c     SDL2 main loop, timing, rendering, event handling
-├── x48_sdl.c      Button table, thread-safe event queue, GetEvent()
-├── lcd_mac.c      LCD display buffer management (lcd.c without JNI)
-├── Makefile        Build system
+├── main_sdl.c      SDL2 main loop, timing, rendering, audio, event handling
+├── x48_sdl.c       Button table, thread-safe event queue, GetEvent()
+├── lcd_mac.c       LCD display buffer management (lcd.c without JNI)
+├── test_harness.c  Headless test runner (no SDL2 dependency)
+├── test_cases.h    Shared test functions (used by both test modes)
+├── Makefile        Build system (targets: all, test, clean)
 └── CMakeLists.txt  Alternative CMake build
 
-app/src/main/jni/  Emulator core (from droid48, compiled unchanged)
-├── emulate.c      Saturn CPU instruction execution
-├── actions.c      CPU actions (SHUTDN, interrupts, etc.)
-├── memory.c       Memory management and I/O dispatch
-├── device.c       Hardware device simulation
-├── lcd.c          LCD controller (Android version, not used on Mac)
-├── init.c         State file loading/saving
-├── timer.c        Hardware timer emulation
-└── ...            Other core files
+app/src/main/jni/   Emulator core (from droid48, compiled unchanged)
+├── emulate.c       Saturn CPU instruction execution
+├── actions.c       CPU actions (SHUTDN, interrupts, etc.)
+├── memory.c        Memory management and I/O dispatch
+├── device.c        Hardware device simulation + speaker
+├── lcd.c           LCD controller (Android version, not used on Mac)
+├── init.c          State file loading/saving
+├── timer.c         Hardware timer emulation
+├── rpl.c           RPL object decoding (used by test harness)
+└── ...             Other core files
 ```
 
 ### Threading Model
 
-- **Main thread**: SDL2 event loop and rendering (~60 fps)
+- **Main thread**: SDL2 event loop, rendering (~60 fps), and audio update
 - **Emulator thread**: Runs the Saturn CPU via `emulate()` in a tight loop
+- **Audio thread**: SDL2 audio callback generates square wave from speaker state
+- **Test thread** (--test mode): Sends button events and reads RPL stack results
 - **Communication**: Thread-safe event queue for button presses; emulator thread processes events in `GetEvent()` to avoid race conditions on CPU state
 - **Timing**: `SIGALRM` at 50 Hz sets `got_alarm` flag; `blockConditionVariable()` uses `pthread_cond_timedwait` (20 ms timeout) for the SHUTDN idle handler
 
@@ -105,6 +131,7 @@ app/src/main/jni/  Emulator core (from droid48, compiled unchanged)
 - Button events are **only processed in the emulator thread** via the event queue. Direct manipulation of `saturn.PC` from the SDL thread caused race conditions with the SHUTDN handler.
 - The SIGALRM handler only sets a flag (`got_alarm = 1`). It does **not** call `pthread_mutex_lock` (which is not async-signal-safe).
 - The LCD buffer (`disp_buf_short[]`, RGB565 format) is written by the emulator thread and read by the render thread without locking — safe because writes are atomic at the pixel level and tearing is acceptable.
+- Sound is generated via an SDL2 audio callback that reads a volatile frequency delta set by the main thread from `device.speaker_counter`.
 
 ## ROM Files
 
