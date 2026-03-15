@@ -876,11 +876,7 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
                                sx + sw/2, sy + sh/2, sw - 4);
         }
 
-        /* ---- Alpha letter (green, bottom-right of button) ---- */
-        if (buttons[i].letter && buttons[i].letter[0]) {
-            draw_text_left(renderer, font_shift, buttons[i].letter, clr_alpha,
-                           sx + sw + 2, sy + sh - 5, 0);
-        }
+        /* Alpha letters (A-Z) omitted — not needed with a laptop keyboard */
 
         /* ---- Left / Right shift labels above button ---- */
         {

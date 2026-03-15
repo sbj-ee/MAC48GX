@@ -1197,6 +1197,217 @@ static void test_angle_modes(void)
     check_result("DEG restored: asin(1)", "90"); drop();
 }
 
+/* Helper: navigate to MTH menu, then press a submenu key */
+#define BTN_MTH 6
+static void enter_mth_menu(void)
+{
+    press_key(BTN_MTH);
+    wait_computation(400);
+}
+
+static void test_mth_hyp_menu(void)
+{
+    /*
+     * MTH → HYP menu (manual page 12-3)
+     * MTH shows: VECTR MATR LIST HYP REAL BASE
+     * Press D (button 3) for HYP
+     * HYP shows: SINH COSH TANH ASINH ACOSH ATANH
+     * Menu keys A-F map to these functions
+     */
+    printf("\n--- MTH HYP Menu (Hyperbolic Functions) ---\n");
+
+    /* Navigate to HYP menu */
+    enter_mth_menu();
+    press_key(BTN_D);  /* HYP submenu */
+    wait_computation(400);
+
+    /* SINH(0) = 0 — menu key A */
+    type_number("0"); press_key(BTN_A);
+    check_result("SINH(0)", "0"); drop();
+
+    /* COSH(0) = 1 — menu key C */
+    type_number("0"); press_key(BTN_C);
+    check_result("COSH(0)", "1"); drop();
+
+    /* TANH(0) = 0 — menu key E */
+    type_number("0"); press_key(BTN_E);
+    check_result("TANH(0)", "0"); drop();
+
+    /* SINH(1) ≈ 1.1752011936 — menu key A */
+    type_number("1"); press_key(BTN_A);
+    check_result("SINH(1)", "1.1752011936"); drop();
+
+    /* COSH(1) ≈ 1.54308063482 — menu key C */
+    type_number("1"); press_key(BTN_C);
+    check_result("COSH(1)", "1.54308063482"); drop();
+
+    /* TANH(1) ≈ 0.761594155956 — menu key E */
+    type_number("1"); press_key(BTN_E);
+    check_result("TANH(1)", ".761594155956"); drop();
+
+    /* ASINH(0) = 0 — menu key B */
+    type_number("0"); press_key(BTN_B);
+    check_result("ASINH(0)", "0"); drop();
+
+    /* ACOSH(1) = 0 — menu key D */
+    type_number("1"); press_key(BTN_D);
+    check_result("ACOSH(1)", "0"); drop();
+
+    /* ATANH(0) = 0 — menu key F */
+    type_number("0"); press_key(BTN_F);
+    check_result("ATANH(0)", "0"); drop();
+
+    /* Roundtrip: ASINH(SINH(2)) = 2 */
+    type_number("2"); press_key(BTN_A);  /* SINH(2) */
+    press_key(BTN_B);                     /* ASINH(SINH(2)) */
+    check_result("ASINH(SINH(2))", "2"); drop();
+
+    /* Exit HYP menu — press ON */
+    press_key(BTN_ON); wait_computation(300);
+}
+
+static void test_mth_real_menu(void)
+{
+    /*
+     * MTH → REAL menu (manual page 12-9)
+     * MTH shows: VECTR MATR LIST HYP REAL BASE
+     * Press E (button 4) for REAL
+     * REAL shows: ABS CEIL FLOOR FP IP MANT
+     * NXT page: MAX MIN MOD RND SIGN TRNC
+     * NXT page: D→R R→D
+     */
+    printf("\n--- MTH REAL Menu (Real Number Functions) ---\n");
+
+    /* Navigate to REAL menu */
+    enter_mth_menu();
+    press_key(BTN_E);  /* REAL submenu */
+    wait_computation(400);
+
+    /* ABS(-12) = 12 — menu key A */
+    type_number("12"); press_key(BTN_NEG);
+    press_key(BTN_A);
+    check_result("ABS(-12)", "12"); drop();
+
+    /* ABS(5) = 5 */
+    type_number("5"); press_key(BTN_A);
+    check_result("ABS(5)", "5"); drop();
+
+    /* CEIL(-3.5) = -3 — menu key B */
+    type_number("3.5"); press_key(BTN_NEG);
+    press_key(BTN_B);
+    check_result("CEIL(-3.5)", "-3"); drop();
+
+    /* CEIL(3.5) = 4 */
+    type_number("3.5"); press_key(BTN_B);
+    check_result("CEIL(3.5)", "4"); drop();
+
+    /* FLOOR(6.9) = 6 — menu key C */
+    type_number("6.9"); press_key(BTN_C);
+    check_result("FLOOR(6.9)", "6"); drop();
+
+    /* FLOOR(-6.9) = -7 */
+    type_number("6.9"); press_key(BTN_NEG);
+    press_key(BTN_C);
+    check_result("FLOOR(-6.9)", "-7"); drop();
+
+    /* FP(5.234) = .234 — menu key D (fractional part) */
+    type_number("5.234"); press_key(BTN_D);
+    check_result("FP(5.234)", ".234"); drop();
+
+    /* IP(5.234) = 5 — menu key E (integer part) */
+    type_number("5.234"); press_key(BTN_E);
+    check_result("IP(5.234)", "5"); drop();
+
+    /* NXT page: MAX MIN MOD... */
+    press_key(BTN_NXT); wait_computation(300);
+
+    /* MAX(5, -6) = 5 — menu key A */
+    type_number("5"); press_key(BTN_ENTER);
+    type_number("6"); press_key(BTN_NEG);
+    press_key(BTN_A);
+    check_result("MAX(5,-6)", "5"); drop();
+
+    /* MIN(5, -6) = -6 — menu key B */
+    type_number("5"); press_key(BTN_ENTER);
+    type_number("6"); press_key(BTN_NEG);
+    press_key(BTN_B);
+    check_result("MIN(5,-6)", "-6"); drop();
+
+    /* MOD(6, 4) = 2 — menu key C */
+    type_number("6"); press_key(BTN_ENTER);
+    type_number("4");
+    press_key(BTN_C);
+    check_result("MOD(6,4)", "2"); drop();
+
+    /* SIGN(-2.7) = -1 — menu key E */
+    type_number("2.7"); press_key(BTN_NEG);
+    press_key(BTN_E);
+    check_result("SIGN(-2.7)", "-1"); drop();
+
+    /* SIGN(42) = 1 */
+    type_number("42"); press_key(BTN_E);
+    check_result("SIGN(42)", "1"); drop();
+
+    /* Exit REAL menu — press ON */
+    press_key(BTN_ON); wait_computation(300);
+}
+
+static void test_mth_prob_menu(void)
+{
+    /*
+     * MTH → NXT → PROB menu (manual page 12-4)
+     * Press MTH, NXT to get to page 2
+     * Page 2 shows: PROB ...
+     * PROB shows: COMB PERM ! RAND RDZ
+     */
+    printf("\n--- MTH PROB Menu (Probability) ---\n");
+
+    /* Navigate: MTH → NXT → PROB (menu key A on page 2) */
+    enter_mth_menu();
+    press_key(BTN_NXT); wait_computation(300);
+    press_key(BTN_A);   /* PROB submenu */
+    wait_computation(400);
+
+    /* COMB(5,2) = 10 — menu key A: "5 choose 2" */
+    type_number("5"); press_key(BTN_ENTER);
+    type_number("2");
+    press_key(BTN_A);
+    check_result("COMB(5,2)", "10"); drop();
+
+    /* COMB(10,3) = 120 */
+    type_number("10"); press_key(BTN_ENTER);
+    type_number("3");
+    press_key(BTN_A);
+    check_result("COMB(10,3)", "120"); drop();
+
+    /* PERM(5,2) = 20 — menu key B */
+    type_number("5"); press_key(BTN_ENTER);
+    type_number("2");
+    press_key(BTN_B);
+    check_result("PERM(5,2)", "20"); drop();
+
+    /* PERM(4,4) = 24 (= 4!) */
+    type_number("4"); press_key(BTN_ENTER);
+    type_number("4");
+    press_key(BTN_B);
+    check_result("PERM(4,4)", "24"); drop();
+
+    /* 5! = 120 — menu key C (factorial) */
+    type_number("5"); press_key(BTN_C);
+    check_result("5!", "120"); drop();
+
+    /* 10! = 3628800 */
+    type_number("10"); press_key(BTN_C);
+    check_result("10!", "3628800"); drop();
+
+    /* 0! = 1 */
+    type_number("0"); press_key(BTN_C);
+    check_result("0!", "1"); drop();
+
+    /* Exit menu — press ON */
+    press_key(BTN_ON); wait_computation(300);
+}
+
 /* --- Run all tests --- */
 static void run_all_tests(void)
 {
@@ -1232,6 +1443,7 @@ static void run_all_tests(void)
     test_stack_manipulation();       clear_stack();
     test_eex_notation();             clear_stack();
     test_angle_modes();              clear_stack();
+    test_mth_prob_menu();            clear_stack();
     test_edge_cases();
 
     printf("\n======================\n");
