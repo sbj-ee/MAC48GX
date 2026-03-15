@@ -529,8 +529,8 @@ static const char *btn_labels[NUM_BUTTONS] = {
     "'",    "STO",  "EVAL", "",     "",     "",         /* 12-17: arrows drawn manually */
     "SIN",  "COS",  "TAN",  "",     "",    "1/x",     /* 18-23: sqrt, y^x drawn manually */
     "ENTER","+/-",  "EEX",  "DEL",  "",                /* 24-28: BS=arrow drawn manually */
-    "",     "7",    "8",    "9",    "/",                /* 29-33: alpha drawn manually */
-    "",     "4",    "5",    "6",    "x",                /* 34-38: SHL drawn manually */
+    "",     "7",    "8",    "9",    "\xc3\xb7",         /* 29-33: alpha drawn manually, ÷ */
+    "",     "4",    "5",    "6",    "\xc3\x97",         /* 34-38: SHL drawn manually, × */
     "",     "1",    "2",    "3",    "-",                /* 39-43: SHR drawn manually */
     "ON",   "0",    ".",    "SPC",  "+"                 /* 44-48 */
 };
@@ -830,10 +830,10 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             SDL_RenderDrawLine(renderer, cx-8, cy, cx-3, cy+4);
         } else if (i == 22) {
             /* y^x with superscript x */
-            draw_text_centered(renderer, font_btn, "y", clr_white,
-                               sx + sw/2 - 6, sy + sh/2 + 2, 0);
-            draw_text_centered(renderer, font_btn_sm, "x", clr_white,
-                               sx + sw/2 + 8, sy + sh/2 - 6, 0);
+            draw_text_centered(renderer, font_btn_lg, "y", clr_white,
+                               sx + sw/2 - 8, sy + sh/2 + 2, 0);
+            draw_text_centered(renderer, font_btn, "x", clr_white,
+                               sx + sw/2 + 10, sy + sh/2 - 8, 0);
         } else if (i == 29) {
             /* Alpha symbol α (Greek lowercase alpha, UTF-8: 0xCE 0xB1) */
             draw_text_centered(renderer, font_btn_lg, "\xce\xb1", clr_white,
@@ -868,8 +868,10 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             /* Text label on button face */
             SDL_Color fc = clr_white;
             TTF_Font *f = font_btn;
+            /* Number keys + operators: use large font */
             if (buttons[i].font_size == 1 && font_btn_lg) f = font_btn_lg;
-            if (i == 24 && font_btn_sm) f = font_btn_sm;
+            if (i == 33 || i == 38 || i == 43 || i == 48) f = font_btn_lg; /* ÷ × - + */
+            if (i == 24 && font_btn_sm) f = font_btn_sm; /* ENTER */
             draw_text_centered(renderer, f, lbl, fc,
                                sx + sw/2, sy + sh/2, sw - 4);
         }
@@ -891,20 +893,20 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             /* Max label width: half the button width to avoid overlap */
             if (has_left && has_right) {
                 /* Spread labels across full column width (button + gap).
-                 * Standard column pitch = 50 orig units * scale. */
+                 * Clip each label to its half to prevent overlap. */
                 int col = (50 * SC_NUM) / SC_DEN;
-                /* For wide keys (ENTER), use actual button width */
                 if (sw > col) col = sw;
+                int half = col / 2 - 2;
                 draw_text_centered(renderer, font_shift, ltxt,
-                                   clr_lshift, sx + col/4, ly, 0);
+                                   clr_lshift, sx + col/4, ly, half);
                 draw_text_centered(renderer, font_shift, rtxt,
-                                   clr_rshift, sx + col*3/4, ly, 0);
+                                   clr_rshift, sx + col*3/4, ly, half);
             } else if (has_left) {
                 draw_text_centered(renderer, font_shift, ltxt,
-                                   clr_lshift, sx + sw/2, ly, 0);
+                                   clr_lshift, sx + sw/2, ly, sw + 10);
             } else if (has_right) {
                 draw_text_centered(renderer, font_shift, rtxt,
-                                   clr_rshift, sx + sw/2, ly, 0);
+                                   clr_rshift, sx + sw/2, ly, sw + 10);
             }
         }
 
@@ -1039,15 +1041,16 @@ int main(int argc, char **argv)
         char fm_bundle[256];
         snprintf(fm_bundle, sizeof(fm_bundle), "%s/../Resources/Asana-Math.ttf", exe_dir);
 
-        font_btn    = TTF_OpenFont(fn, 18);
-        font_btn_lg = TTF_OpenFont(fn, 24);
-        font_btn_sm = TTF_OpenFont(fn, 15);
+        font_btn    = TTF_OpenFont(fn, 22);
+        font_btn_lg = TTF_OpenFont(fn, 30);
+        font_btn_sm = TTF_OpenFont(fn, 17);
         font_title  = TTF_OpenFont(fb, 14);
         /* Try Asana-Math for shift labels: bundle → local → assets */
-        font_shift  = TTF_OpenFont(fm_bundle, 12);
-        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 12);
-        if (!font_shift) font_shift = TTF_OpenFont(fm, 12);
-        if (!font_shift) font_shift = TTF_OpenFont(fb, 12);  /* fallback */
+        /* Asana-Math: has all HP-48 math symbols (∂ ∫ Σ π ∠ → ↵ ²) */
+        font_shift  = TTF_OpenFont(fm_bundle, 14);
+        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 14);
+        if (!font_shift) font_shift = TTF_OpenFont(fm, 14);
+        if (!font_shift) font_shift = TTF_OpenFont(fb, 14);
         if (!font_btn) {
             fn = "/System/Library/Fonts/Monaco.ttf";
             font_btn    = TTF_OpenFont(fn, 12);
