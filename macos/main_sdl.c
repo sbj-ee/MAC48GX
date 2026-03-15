@@ -816,9 +816,16 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
         }
     }
 
-    /* --- Title --- */
-    draw_text_left(renderer, font_title, "droid48", clr_title,
-                   LCD_X, BTN_Y - 12, 0);
+    /* --- Title with version --- */
+    {
+#ifndef APP_VERSION
+#define APP_VERSION "dev"
+#endif
+        char title_buf[64];
+        snprintf(title_buf, sizeof(title_buf), "droid48 %s", APP_VERSION);
+        draw_text_left(renderer, font_title, title_buf, clr_title,
+                       LCD_X, BTN_Y - 12, 0);
+    }
 
     SDL_RenderPresent(renderer);
 }
@@ -947,9 +954,13 @@ int main(int argc, char **argv)
             TTF_SetFontStyle(font_title, TTF_STYLE_BOLD);
     }
 
-    window = SDL_CreateWindow("droid48-mac",
+    {
+        char win_title[64];
+        snprintf(win_title, sizeof(win_title), "droid48-mac %s", APP_VERSION);
+        window = SDL_CreateWindow(win_title,
                               SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               WIN_W, WIN_H, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+    }
     if (!window) {
         fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
         return 1;
@@ -981,7 +992,11 @@ int main(int argc, char **argv)
     /* buttons[] array is defined in x48_sdl.c */
 
     if (test_mode)
-        SDL_SetWindowTitle(window, "droid48-mac — TEST MODE");
+    {
+        char test_title[64];
+        snprintf(test_title, sizeof(test_title), "droid48-mac %s — TEST MODE", APP_VERSION);
+        SDL_SetWindowTitle(window, test_title);
+    }
 
     /* Start emulator thread */
     if (pthread_create(&emu_thread, NULL, emulator_thread, NULL) != 0) {

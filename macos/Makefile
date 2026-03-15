@@ -6,9 +6,11 @@ MAC  := .
 BUILD := build
 
 CC      := clang
+VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 CFLAGS  := -std=gnu11 -O2 \
            -I$(MAC) -I$(JNI) \
            -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
+           -DAPP_VERSION='"$(VERSION)"' \
            $(shell sdl2-config --cflags) \
            -Wno-implicit-function-declaration \
            -Wno-incompatible-pointer-types \
@@ -66,7 +68,7 @@ TEST_TARGET := $(BUILD)/droid48-test
 APP_NAME   := droid48.app
 APP_DIR    := $(BUILD)/$(APP_NAME)
 
-.PHONY: all clean run test bundle
+.PHONY: all clean run test bundle dmg
 
 all: $(BUILD) $(TARGET)
 
@@ -106,11 +108,11 @@ test: $(BUILD) $(TEST_TARGET)
 
 # macOS .app bundle — double-clickable, no terminal window
 bundle: all
-	@echo "--- Creating $(APP_NAME) bundle ---"
+	@echo "--- Creating $(APP_NAME) bundle ($(VERSION)) ---"
 	@mkdir -p "$(APP_DIR)/Contents/MacOS"
 	@mkdir -p "$(APP_DIR)/Contents/Resources"
 	@cp $(TARGET) "$(APP_DIR)/Contents/MacOS/droid48-mac"
-	@cp $(MAC)/Info.plist "$(APP_DIR)/Contents/"
+	@sed 's/0\.1\.1/$(VERSION)/g' $(MAC)/Info.plist > "$(APP_DIR)/Contents/Info.plist"
 	@cp $(MAC)/droid48.icns "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
 	@cp -n $(JNI)/rom "$(APP_DIR)/Contents/Resources/rom" 2>/dev/null || true
 	@cp -n $(JNI)/ram "$(APP_DIR)/Contents/Resources/ram" 2>/dev/null || true
@@ -118,6 +120,23 @@ bundle: all
 	@echo "--- Built: $(APP_DIR)"
 	@echo "    Open with: open $(APP_DIR)"
 	@echo "    Or drag to /Applications"
+
+# DMG installer image
+DMG_NAME := droid48-mac-$(VERSION).dmg
+
+dmg: bundle
+	@echo "--- Creating $(DMG_NAME) ---"
+	@rm -f "$(BUILD)/$(DMG_NAME)"
+	@mkdir -p "$(BUILD)/dmg-staging"
+	@cp -R "$(APP_DIR)" "$(BUILD)/dmg-staging/"
+	@ln -sf /Applications "$(BUILD)/dmg-staging/Applications"
+	@hdiutil create -volname "droid48 $(VERSION)" \
+		-srcfolder "$(BUILD)/dmg-staging" \
+		-ov -format UDZO \
+		"$(BUILD)/$(DMG_NAME)" > /dev/null
+	@rm -rf "$(BUILD)/dmg-staging"
+	@echo "--- Built: $(BUILD)/$(DMG_NAME)"
+	@echo "    Size: $$(du -h "$(BUILD)/$(DMG_NAME)" | cut -f1)"
 
 clean:
 	rm -rf $(BUILD)
