@@ -274,8 +274,8 @@ static void *emulator_thread(void *arg)
 /* Scale: 2x horizontal, 10/7≈1.43x vertical (compact rows) */
 #define SC_NUM   2
 #define SC_DEN   1
-#define SCV_NUM  10
-#define SCV_DEN   7
+#define SCV_NUM  13
+#define SCV_DEN  10
 
 /* LCD area in screen pixels (uses horizontal scale) */
 #define LCD_SW  ((LCD_W * SC_NUM) / SC_DEN)    /* 458 */
@@ -519,7 +519,7 @@ static TTF_Font *font_title    = NULL;  /* title text (11pt bold)        */
 static const SDL_Color clr_white   = { 220, 220, 220, 255 };
 static const SDL_Color clr_lshift  = { 190, 140, 230, 255 };  /* purple — left shift (◄) */
 static const SDL_Color clr_rshift  = { 130, 210, 190, 255 };  /* green/teal — right shift (►) */
-static const SDL_Color clr_alpha   = { 130, 210, 190, 255 };  /* green — same as right shift */
+static const SDL_Color clr_alpha   = { 150, 220, 200, 255 };  /* brighter green for alpha letters */
 static const SDL_Color clr_title   = { 200, 200, 200, 255 };
 
 /* Primary button face labels — using ASCII where Unicode fails */
@@ -527,7 +527,7 @@ static const char *btn_labels[NUM_BUTTONS] = {
     "",     "",     "",     "",     "",     "",          /*  0- 5: menu (drawn as boxes) */
     "MTH",  "PRG",  "CST",  "VAR",  "",    "NXT",      /*  6-11: UP=arrow drawn manually */
     "'",    "STO",  "EVAL", "",     "",     "",         /* 12-17: arrows drawn manually */
-    "SIN",  "COS",  "TAN",  "",     "y^x", "1/x",     /* 18-23: sqrt drawn manually */
+    "SIN",  "COS",  "TAN",  "",     "",    "1/x",     /* 18-23: sqrt, y^x drawn manually */
     "ENTER","+/-",  "EEX",  "DEL",  "",                /* 24-28: BS=arrow drawn manually */
     "",     "7",    "8",    "9",    "/",                /* 29-33: alpha drawn manually */
     "",     "4",    "5",    "6",    "x",                /* 34-38: SHL drawn manually */
@@ -703,21 +703,30 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
 {
     int i;
 
-    /* --- Background: HP-48GX body color --- */
-    SDL_SetRenderDrawColor(renderer, CLR_BODY_R, CLR_BODY_G, CLR_BODY_B, 255);
+    /* --- Background: calculator body with subtle border --- */
+    SDL_SetRenderDrawColor(renderer, CLR_BODY_R - 8, CLR_BODY_G - 8, CLR_BODY_B - 8, 255);
     SDL_RenderClear(renderer);
-
-    /* --- LCD bezel (darker frame around LCD) --- */
     {
-        int bx = LCD_X - 4, by = LCD_Y - 4;
-        int bw = LCD_SW + 8, bh = LCD_SH + 8;
-        SDL_Rect bezel = { bx, by, bw, bh };
-        SDL_SetRenderDrawColor(renderer, 40, 45, 45, 255);
-        SDL_RenderFillRect(renderer, &bezel);
+        /* Slightly lighter inner area */
+        SDL_Rect inner = { 4, 4, WIN_W - 8, WIN_H - 8 };
+        SDL_SetRenderDrawColor(renderer, CLR_BODY_R, CLR_BODY_G, CLR_BODY_B, 255);
+        SDL_RenderFillRect(renderer, &inner);
     }
 
-    /* --- Update LCD texture from emulator buffers --- */
+    /* --- LCD bezel (layered frame for depth) --- */
     {
+        /* Outer bezel — dark */
+        int bx = LCD_X - 6, by = LCD_Y - 6;
+        int bw = LCD_SW + 12, bh = LCD_SH + 12;
+        SDL_SetRenderDrawColor(renderer, 35, 40, 40, 255);
+        fill_rounded_rect(renderer, bx, by, bw, bh, 6);
+        /* Inner bezel — slightly lighter for depth */
+        SDL_SetRenderDrawColor(renderer, 48, 55, 55, 255);
+        fill_rounded_rect(renderer, bx+2, by+2, bw-4, bh-4, 4);
+    }
+
+    /* --- Update LCD texture only when display changed --- */
+    if (flipable) {
         memcpy(combined_buf,
                disp_buf_header_short,
                HDR_H * LCD_W * sizeof(Uint16));
@@ -740,15 +749,21 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
         int sy = btn_to_screen_y(buttons[i].y);
         int sw = btn_screen_w(buttons[i].w);
         int sh = btn_screen_h(buttons[i].h);
-        SDL_Rect r = { sx, sy, sw, sh };
         const char *lbl = btn_labels[i];
+        int pressed = buttons[i].pressed;
+
+        /* Pressed buttons shift down 2px for physical feel */
+        if (pressed) sy += 2;
 
         /* ---- Button face color ---- */
-        if (buttons[i].pressed) {
-            SDL_SetRenderDrawColor(renderer, 100, 100, 110, 255);
+        if (pressed) {
+            SDL_SetRenderDrawColor(renderer, 80, 80, 90, 255);
         } else if (i < 6) {
             /* Menu keys A-F: light gray */
             SDL_SetRenderDrawColor(renderer, 160, 165, 165, 255);
+        } else if (i == 44) {
+            /* ON button: slightly distinct dark green-gray */
+            SDL_SetRenderDrawColor(renderer, 28, 38, 32, 255);
         } else {
             /* All other keys: dark/black */
             SDL_SetRenderDrawColor(renderer, 32, 32, 36, 255);
@@ -756,6 +771,11 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
         {
             int rad = (i < 6) ? 4 : 5;
             fill_rounded_rect(renderer, sx, sy, sw, sh, rad);
+            /* Subtle highlight line on top edge for 3D look */
+            if (!buttons[i].pressed && i >= 6) {
+                SDL_SetRenderDrawColor(renderer, 55, 55, 60, 255);
+                SDL_RenderDrawLine(renderer, sx + rad, sy + 1, sx + sw - rad, sy + 1);
+            }
         }
 
         /* ---- Button face label ---- */
@@ -808,26 +828,42 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             SDL_RenderDrawLine(renderer, cx-8, cy, cx+8, cy);
             SDL_RenderDrawLine(renderer, cx-8, cy, cx-3, cy-4);
             SDL_RenderDrawLine(renderer, cx-8, cy, cx-3, cy+4);
+        } else if (i == 22) {
+            /* y^x with superscript x */
+            draw_text_centered(renderer, font_btn, "y", clr_white,
+                               sx + sw/2 - 6, sy + sh/2 + 2, 0);
+            draw_text_centered(renderer, font_btn_sm, "x", clr_white,
+                               sx + sw/2 + 8, sy + sh/2 - 6, 0);
         } else if (i == 29) {
             /* Alpha symbol α (Greek lowercase alpha, UTF-8: 0xCE 0xB1) */
             draw_text_centered(renderer, font_btn_lg, "\xce\xb1", clr_white,
                                sx + sw/2, sy + sh/2, sw - 4);
         } else if (i == 34) {
-            /* Left shift: draw ← arrow in green */
+            /* Left shift: bold ← arrow in purple */
             int cx = sx + sw/2, cy = sy + sh/2;
+            int r;
             SDL_SetRenderDrawColor(renderer, clr_lshift.r, clr_lshift.g, clr_lshift.b, 255);
-            SDL_RenderDrawLine(renderer, cx-8, cy, cx+8, cy);
-            SDL_RenderDrawLine(renderer, cx-8, cy, cx-3, cy-4);
-            SDL_RenderDrawLine(renderer, cx-8, cy, cx-3, cy+4);
-            SDL_RenderDrawLine(renderer, cx-8, cy-1, cx+8, cy-1);
+            /* Thick shaft */
+            for (r = -2; r <= 2; r++)
+                SDL_RenderDrawLine(renderer, cx-10, cy+r, cx+12, cy+r);
+            /* Large arrowhead */
+            { int dy; for (dy = -7; dy <= 7; dy++) {
+                int tip = (7 - (dy < 0 ? -dy : dy)) * 10 / 7;
+                SDL_RenderDrawLine(renderer, cx-10-tip, cy+dy, cx-10, cy+dy);
+            }}
         } else if (i == 39) {
-            /* Right shift: draw → arrow in purple */
+            /* Right shift: bold → arrow in green */
             int cx = sx + sw/2, cy = sy + sh/2;
+            int r;
             SDL_SetRenderDrawColor(renderer, clr_rshift.r, clr_rshift.g, clr_rshift.b, 255);
-            SDL_RenderDrawLine(renderer, cx-8, cy, cx+8, cy);
-            SDL_RenderDrawLine(renderer, cx+8, cy, cx+3, cy-4);
-            SDL_RenderDrawLine(renderer, cx+8, cy, cx+3, cy+4);
-            SDL_RenderDrawLine(renderer, cx-8, cy-1, cx+8, cy-1);
+            /* Thick shaft */
+            for (r = -2; r <= 2; r++)
+                SDL_RenderDrawLine(renderer, cx-12, cy+r, cx+10, cy+r);
+            /* Large arrowhead */
+            { int dy; for (dy = -7; dy <= 7; dy++) {
+                int tip = (7 - (dy < 0 ? -dy : dy)) * 10 / 7;
+                SDL_RenderDrawLine(renderer, cx+10, cy+dy, cx+10+tip, cy+dy);
+            }}
         } else if (lbl[0]) {
             /* Text label on button face */
             SDL_Color fc = clr_white;
@@ -848,7 +884,7 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
         {
             int has_left  = is_printable_label(buttons[i].left);
             int has_right = is_printable_label(buttons[i].right);
-            int ly = sy - 13;  /* above the button */
+            int ly = sy - 11;  /* above the button */
             char lbuf[32], rbuf[32];
             const char *ltxt = has_left  ? trim_label(translate_hp48_label(buttons[i].left),  lbuf, sizeof(lbuf)) : NULL;
             const char *rtxt = has_right ? trim_label(translate_hp48_label(buttons[i].right), rbuf, sizeof(rbuf)) : NULL;
@@ -1006,12 +1042,12 @@ int main(int argc, char **argv)
         font_btn    = TTF_OpenFont(fn, 18);
         font_btn_lg = TTF_OpenFont(fn, 24);
         font_btn_sm = TTF_OpenFont(fn, 15);
-        font_title  = TTF_OpenFont(fb, 13);
+        font_title  = TTF_OpenFont(fb, 14);
         /* Try Asana-Math for shift labels: bundle → local → assets */
-        font_shift  = TTF_OpenFont(fm_bundle, 14);
-        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 14);
-        if (!font_shift) font_shift = TTF_OpenFont(fm, 14);
-        if (!font_shift) font_shift = TTF_OpenFont(fb, 14);  /* fallback */
+        font_shift  = TTF_OpenFont(fm_bundle, 12);
+        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 12);
+        if (!font_shift) font_shift = TTF_OpenFont(fm, 12);
+        if (!font_shift) font_shift = TTF_OpenFont(fb, 12);  /* fallback */
         if (!font_btn) {
             fn = "/System/Library/Fonts/Monaco.ttf";
             font_btn    = TTF_OpenFont(fn, 12);
@@ -1082,6 +1118,15 @@ int main(int argc, char **argv)
         pthread_create(&test_thread, NULL, test_thread_func, NULL);
     }
 
+    /* Cursors */
+    SDL_Cursor *cursor_arrow = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+    SDL_Cursor *cursor_hand  = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+    int current_cursor_is_hand = 0;
+
+    /* Overlay state */
+    int show_keyboard_help = 0;
+    int show_about = 0;
+
     /* --- SDL event loop --- */
     SDL_Event ev;
     int running = 1;
@@ -1097,13 +1142,30 @@ int main(int argc, char **argv)
                 exit_state = 0;
                 break;
 
+            case SDL_MOUSEMOTION: {
+                /* Change cursor to hand when hovering over buttons */
+                int b = hit_test(ev.motion.x, ev.motion.y);
+                if (b >= 0 && !current_cursor_is_hand) {
+                    SDL_SetCursor(cursor_hand);
+                    current_cursor_is_hand = 1;
+                } else if (b < 0 && current_cursor_is_hand) {
+                    SDL_SetCursor(cursor_arrow);
+                    current_cursor_is_hand = 0;
+                }
+                break;
+            }
+
             case SDL_MOUSEBUTTONDOWN:
                 if (ev.button.button == SDL_BUTTON_LEFT) {
+                    /* Dismiss overlays on click */
+                    if (show_keyboard_help || show_about) {
+                        show_keyboard_help = 0;
+                        show_about = 0;
+                        break;
+                    }
                     int b = hit_test(ev.button.x, ev.button.y);
                     if (b >= 0) {
                         pressed_btn = b;
-                        /* Queue event — only processed by emulator thread
-                         * via GetEvent() → key_event() → do_kbd_int() */
                         sdl_push_event(b + 1);
                         got_alarm = 1;
                         pthread_mutex_lock(&uiConditionMutex);
@@ -1125,8 +1187,84 @@ int main(int argc, char **argv)
                 break;
 
             case SDL_KEYDOWN: {
+                SDL_Keymod mod = SDL_GetModState();
+                int cmd = (mod & KMOD_GUI);  /* Cmd key on Mac */
+
+                /* Cmd+Q = quit */
+                if (cmd && ev.key.keysym.sym == SDLK_q) {
+                    running = 0;
+                    exit_state = 0;
+                    break;
+                }
+
+                /* Cmd+C = copy stack level 1 to clipboard */
+                if (cmd && ev.key.keysym.sym == SDLK_c) {
+                    char buf[65536];
+                    if (read_stack_level(1, buf, sizeof(buf)) == 0) {
+                        char *val = trim(buf);
+                        SDL_SetClipboardText(val);
+                    }
+                    break;
+                }
+
+                /* Cmd+V = paste number from clipboard */
+                if (cmd && ev.key.keysym.sym == SDLK_v) {
+                    char *clip = SDL_GetClipboardText();
+                    if (clip && clip[0]) {
+                        const char *p;
+                        for (p = clip; *p; p++) {
+                            switch (*p) {
+                            case '0': sdl_push_event(BTN_0+1); break;
+                            case '1': sdl_push_event(BTN_1+1); break;
+                            case '2': sdl_push_event(BTN_2+1); break;
+                            case '3': sdl_push_event(BTN_3+1); break;
+                            case '4': sdl_push_event(BTN_4+1); break;
+                            case '5': sdl_push_event(BTN_5+1); break;
+                            case '6': sdl_push_event(BTN_6+1); break;
+                            case '7': sdl_push_event(BTN_7+1); break;
+                            case '8': sdl_push_event(BTN_8+1); break;
+                            case '9': sdl_push_event(BTN_9+1); break;
+                            case '.': sdl_push_event(BTN_PERIOD+1); break;
+                            case '-': sdl_push_event(BTN_NEG+1); break;
+                            default: break;
+                            }
+                            /* Brief release after each */
+                            sdl_push_event(100 + ((*p >= '0' && *p <= '9') ?
+                                ((*p == '0') ? BTN_0 : BTN_1 + (*p - '1')) : BTN_PERIOD));
+                        }
+                        got_alarm = 1;
+                        pthread_mutex_lock(&uiConditionMutex);
+                        pthread_cond_signal(&uiConditionVariable);
+                        pthread_mutex_unlock(&uiConditionMutex);
+                    }
+                    SDL_free(clip);
+                    break;
+                }
+
+                /* Cmd+K = toggle keyboard shortcut overlay */
+                if (cmd && ev.key.keysym.sym == SDLK_k) {
+                    show_keyboard_help = !show_keyboard_help;
+                    show_about = 0;
+                    break;
+                }
+
+                /* Cmd+I = toggle about overlay */
+                if (cmd && ev.key.keysym.sym == SDLK_i) {
+                    show_about = !show_about;
+                    show_keyboard_help = 0;
+                    break;
+                }
+
+                /* Dismiss overlays on Escape */
+                if (ev.key.keysym.sym == SDLK_ESCAPE && (show_keyboard_help || show_about)) {
+                    show_keyboard_help = 0;
+                    show_about = 0;
+                    break;
+                }
+
+                /* Normal key → calculator button */
                 int b = keysym_to_button(ev.key.keysym.sym);
-                if (b >= 0 && !ev.key.repeat) {
+                if (b >= 0 && !ev.key.repeat && !cmd) {
                     sdl_push_event(b + 1);
                     got_alarm = 1;
                     pthread_mutex_lock(&uiConditionMutex);
@@ -1151,6 +1289,64 @@ int main(int argc, char **argv)
         }
 
         render(renderer, lcd_tex);
+
+        /* Draw overlay if active */
+        if (show_keyboard_help) {
+            /* Semi-transparent background */
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_Rect overlay = { 20, 20, WIN_W - 40, WIN_H - 40 };
+            SDL_RenderFillRect(renderer, &overlay);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+            SDL_Color w = { 230, 230, 230, 255 };
+            SDL_Color g = { 130, 210, 190, 255 };
+            int y = 40;
+            draw_text_centered(renderer, font_btn, "Keyboard Shortcuts", w, WIN_W/2, y, 0); y += 30;
+            draw_text_left(renderer, font_shift, "0-9  . SPC     Number keys", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "+ - * /         Arithmetic", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Enter           ENTER", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Backspace       Backspace", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Delete          DEL", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Escape          ON", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Arrow keys      Cursor", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "F1-F6           Menu A-F", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "s c t           SIN COS TAN", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "a               ALPHA", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "e               EEX", g, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "n               +/- (negate)", g, 40, y, 0); y += 24;
+            draw_text_left(renderer, font_shift, "Cmd+C           Copy stack to clipboard", w, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Cmd+V           Paste number", w, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Cmd+K           This help", w, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Cmd+I           About", w, 40, y, 0); y += 18;
+            draw_text_left(renderer, font_shift, "Cmd+Q           Quit", w, 40, y, 0); y += 24;
+            draw_text_centered(renderer, font_shift, "Click anywhere or press Esc to dismiss", w, WIN_W/2, y, 0);
+            SDL_RenderPresent(renderer);
+        } else if (show_about) {
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_Rect overlay = { 40, WIN_H/2 - 120, WIN_W - 80, 240 };
+            SDL_RenderFillRect(renderer, &overlay);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+            SDL_Color w = { 230, 230, 230, 255 };
+            SDL_Color g = { 130, 210, 190, 255 };
+            int y = WIN_H/2 - 90;
+            {
+                char ver[64];
+                snprintf(ver, sizeof(ver), "MAC48GX %s", APP_VERSION);
+                draw_text_centered(renderer, font_btn, ver, w, WIN_W/2, y, 0);
+            }
+            y += 28;
+            draw_text_centered(renderer, font_shift, "Saturn CPU emulator for macOS", g, WIN_W/2, y, 0); y += 22;
+            draw_text_centered(renderer, font_shift, "Based on x48 by Eddie C. Dost (1994)", w, WIN_W/2, y, 0); y += 18;
+            draw_text_centered(renderer, font_shift, "Android port: droid48 by Arnaud Brochard", w, WIN_W/2, y, 0); y += 18;
+            draw_text_centered(renderer, font_shift, "macOS port: MAC48GX", w, WIN_W/2, y, 0); y += 18;
+            draw_text_centered(renderer, font_shift, "Licensed under GPL-3.0", g, WIN_W/2, y, 0); y += 24;
+            draw_text_centered(renderer, font_shift, "Click anywhere or press Esc to dismiss", w, WIN_W/2, y, 0);
+            SDL_RenderPresent(renderer);
+        }
+
         update_audio();
         SDL_Delay(16); /* ~60 fps */
 
@@ -1175,6 +1371,8 @@ int main(int argc, char **argv)
     /* Save state */
     write_files();
 
+    SDL_FreeCursor(cursor_arrow);
+    SDL_FreeCursor(cursor_hand);
     if (audio_dev > 0)
         SDL_CloseAudioDevice(audio_dev);
     SDL_DestroyTexture(lcd_tex);
