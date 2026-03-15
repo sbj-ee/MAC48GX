@@ -63,7 +63,10 @@ TEST_CFLAGS := -std=gnu11 -O2 \
 
 TEST_TARGET := $(BUILD)/droid48-test
 
-.PHONY: all clean run test
+APP_NAME   := HP-48GX.app
+APP_DIR    := $(BUILD)/$(APP_NAME)
+
+.PHONY: all clean run test bundle
 
 all: $(BUILD) $(TARGET)
 
@@ -100,6 +103,20 @@ $(TEST_TARGET): $(TEST_OBJS)
 
 test: $(BUILD) $(TEST_TARGET)
 	$(TEST_TARGET)
+
+# macOS .app bundle — double-clickable, no terminal window
+bundle: all
+	@echo "--- Creating $(APP_NAME) bundle ---"
+	@mkdir -p "$(APP_DIR)/Contents/MacOS"
+	@mkdir -p "$(APP_DIR)/Contents/Resources"
+	@cp $(TARGET) "$(APP_DIR)/Contents/MacOS/droid48-mac"
+	@cp $(MAC)/Info.plist "$(APP_DIR)/Contents/"
+	@cp -n $(JNI)/rom "$(APP_DIR)/Contents/Resources/rom" 2>/dev/null || true
+	@cp -n $(JNI)/ram "$(APP_DIR)/Contents/Resources/ram" 2>/dev/null || true
+	@test -f $(JNI)/hp48 && cp -n $(JNI)/hp48 "$(APP_DIR)/Contents/Resources/hp48" 2>/dev/null || true
+	@echo "--- Built: $(APP_DIR)"
+	@echo "    Open with: open $(APP_DIR)"
+	@echo "    Or drag to /Applications"
 
 clean:
 	rm -rf $(BUILD)

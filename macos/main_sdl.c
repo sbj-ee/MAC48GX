@@ -161,12 +161,19 @@ static void ensure_data_files(const char *exe_dir)
     snprintf(full_ram,  256, "%s%s", files_path, ram_filename);
     snprintf(full_conf, 256, "%s%s", files_path, conf_filename);
 
-    /* ROM: copy from exe_dir if not already in data dir */
+    /* ROM: copy from exe_dir, app bundle Resources, or jni dir */
     if (stat(full_rom, &st) != 0 || st.st_size < 1024) {
         char src[256];
+        int found = 0;
+        /* Try next to executable */
         snprintf(src, 256, "%s/rom", exe_dir);
-        if (stat(src, &st) == 0 && st.st_size > 1024) {
-            printf("Copying ROM from %s to %s\n", src, full_rom);
+        if (!found && stat(src, &st) == 0 && st.st_size > 1024) found = 1;
+        /* Try app bundle Resources (exe_dir/../Resources/) */
+        if (!found) {
+            snprintf(src, 256, "%s/../Resources/rom", exe_dir);
+            if (stat(src, &st) == 0 && st.st_size > 1024) found = 1;
+        }
+        if (found) {
             copy_asset(src, full_rom);
         } else {
             fprintf(stderr, "droid48-mac: cannot find ROM file.\n"
