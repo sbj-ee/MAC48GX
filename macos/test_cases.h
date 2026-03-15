@@ -1133,6 +1133,13 @@ static void test_angle_modes(void)
     type_number("1"); lshift_key(BTN_SIN);
     check_result("DEG: asin(1)", "90"); drop();
 
+    /* π constant: left-shift + SPC pushes symbolic π onto stack.
+     * →NUM (left-shift + EVAL) converts to decimal 3.14159265359 */
+    lshift_key(BTN_SPC);
+    wait_computation(300);
+    lshift_key(14);          /* →NUM: left-shift + EVAL (button 14) */
+    check_result("DEG: pi->NUM", "3.14159265359"); drop();
+
     /* === SWITCH TO RAD MODE === */
     /* LS+MTH toggles DEG → RAD (manual page 4-4) */
     lshift_key(6);  /* MTH button = button 6 */
@@ -1163,6 +1170,11 @@ static void test_angle_modes(void)
     /* asin(1) = π/2 ≈ 1.5707963268 in RAD mode */
     type_number("1"); lshift_key(BTN_SIN);
     check_result("RAD: asin(1)", "1.57079632679"); drop();
+
+    /* sin(π) = 0 in RAD mode using the π key */
+    lshift_key(BTN_SPC);   /* push π */
+    press_key(BTN_SIN);
+    check_result("RAD: sin(pi)", "0"); drop();
 
     /* acos(0.5) = π/3 ≈ 1.0471975512 in RAD mode */
     type_number("0.5"); lshift_key(BTN_COS);

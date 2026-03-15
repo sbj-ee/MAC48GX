@@ -271,9 +271,9 @@ static void *emulator_thread(void *arg)
 #define HDR_H    14
 #define FULL_H  (HDR_H + LCD_H)   /* 142 */
 
-/* Scale: 7/4=1.75x horizontal, 10/7≈1.43x vertical (compact rows) */
-#define SC_NUM   7
-#define SC_DEN   4
+/* Scale: 2x horizontal, 10/7≈1.43x vertical (compact rows) */
+#define SC_NUM   2
+#define SC_DEN   1
 #define SCV_NUM  10
 #define SCV_DEN   7
 
@@ -1008,10 +1008,10 @@ int main(int argc, char **argv)
         font_btn_sm = TTF_OpenFont(fn, 15);
         font_title  = TTF_OpenFont(fb, 13);
         /* Try Asana-Math for shift labels: bundle → local → assets */
-        font_shift  = TTF_OpenFont(fm_bundle, 13);
-        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 13);
-        if (!font_shift) font_shift = TTF_OpenFont(fm, 13);
-        if (!font_shift) font_shift = TTF_OpenFont(fb, 13);  /* fallback */
+        font_shift  = TTF_OpenFont(fm_bundle, 14);
+        if (!font_shift) font_shift = TTF_OpenFont("Asana-Math.ttf", 14);
+        if (!font_shift) font_shift = TTF_OpenFont(fm, 14);
+        if (!font_shift) font_shift = TTF_OpenFont(fb, 14);  /* fallback */
         if (!font_btn) {
             fn = "/System/Library/Fonts/Monaco.ttf";
             font_btn    = TTF_OpenFont(fn, 12);
