@@ -203,10 +203,28 @@ static int check_result(const char *test_name, const char *expected)
 
 static void drop(void) { press_key(BTN_BS); wait_computation(300); }
 
+/* Press left-shift + key */
+static void lshift_key(int button_index)
+{
+    press_key(BTN_LSHIFT);
+    press_key(button_index);
+}
+
+/* Press right-shift + key */
+static void rshift_key(int button_index)
+{
+    press_key(BTN_RSHIFT);
+    press_key(button_index);
+}
+
 static void clear_stack(void)
 {
+    /* ON cancels any pending input or error dialog */
+    press_key(BTN_ON);
+    wait_computation(300);
     press_key(BTN_ON);
     wait_computation(200);
+    /* left-shift + DEL = CLEAR (clears entire stack) */
     press_key(BTN_LSHIFT);
     press_key(BTN_DEL);
     wait_computation(300);
@@ -331,6 +349,387 @@ static void test_chained_operations(void)
     check_result("sqrt(3^2+4^2)", "5"); drop();
 }
 
+static void test_inverse_trig(void)
+{
+    printf("\n--- Inverse Trigonometry (DEG mode) ---\n");
+
+    /* asin(1) = 90 */
+    type_number("1"); lshift_key(BTN_SIN);
+    check_result("asin(1)", "90"); drop();
+
+    /* asin(0.5) = 30 */
+    type_number("0.5"); lshift_key(BTN_SIN);
+    check_result("asin(0.5)", "30"); drop();
+
+    /* asin(0) = 0 */
+    type_number("0"); lshift_key(BTN_SIN);
+    check_result("asin(0)", "0"); drop();
+
+    /* acos(1) = 0 */
+    type_number("1"); lshift_key(BTN_COS);
+    check_result("acos(1)", "0"); drop();
+
+    /* acos(0.5) = 60 */
+    type_number("0.5"); lshift_key(BTN_COS);
+    check_result("acos(0.5)", "60"); drop();
+
+    /* acos(0) = 90 */
+    type_number("0"); lshift_key(BTN_COS);
+    check_result("acos(0)", "90"); drop();
+
+    /* atan(1) = 45 */
+    type_number("1"); lshift_key(BTN_TAN);
+    check_result("atan(1)", "45"); drop();
+
+    /* atan(0) = 0 */
+    type_number("0"); lshift_key(BTN_TAN);
+    check_result("atan(0)", "0"); drop();
+}
+
+static void test_logarithms(void)
+{
+    printf("\n--- Logarithms ---\n");
+
+    /* log(100) = 2 */
+    type_number("100"); rshift_key(BTN_POWER);
+    check_result("log(100)", "2"); drop();
+
+    /* log(1000) = 3 */
+    type_number("1000"); rshift_key(BTN_POWER);
+    check_result("log(1000)", "3"); drop();
+
+    /* log(1) = 0 */
+    type_number("1"); rshift_key(BTN_POWER);
+    check_result("log(1)", "0"); drop();
+
+    /* ln(1) = 0 */
+    type_number("1"); rshift_key(BTN_INV);
+    check_result("ln(1)", "0"); drop();
+
+    /* ln(e) ≈ 1 — compute e first with 1 e^x, then ln */
+    type_number("1"); lshift_key(BTN_INV);  /* e^1 = e */
+    rshift_key(BTN_INV);                     /* ln(e) = 1 */
+    check_result("ln(e^1)", "1"); drop();
+}
+
+static void test_exponentials(void)
+{
+    printf("\n--- Exponentials ---\n");
+
+    /* 10^2 = 100 */
+    type_number("2"); lshift_key(BTN_POWER);
+    check_result("10^2", "100"); drop();
+
+    /* 10^0 = 1 */
+    type_number("0"); lshift_key(BTN_POWER);
+    check_result("10^0", "1"); drop();
+
+    /* 10^(-1) = 0.1 */
+    type_number("1"); press_key(BTN_NEG); lshift_key(BTN_POWER);
+    check_result("10^(-1)", ".1"); drop();
+
+    /* e^0 = 1 */
+    type_number("0"); lshift_key(BTN_INV);
+    check_result("e^0", "1"); drop();
+
+    /* e^1 ≈ 2.71828182846 */
+    type_number("1"); lshift_key(BTN_INV);
+    check_result("e^1", "2.71828182846"); drop();
+}
+
+static void test_x_squared(void)
+{
+    printf("\n--- x^2 (Squaring) ---\n");
+
+    /* 5^2 = 25 */
+    type_number("5"); lshift_key(BTN_SQRT);
+    check_result("5^2", "25"); drop();
+
+    /* 12^2 = 144 */
+    type_number("12"); lshift_key(BTN_SQRT);
+    check_result("12^2", "144"); drop();
+
+    /* (-3)^2 = 9 */
+    type_number("3"); press_key(BTN_NEG); lshift_key(BTN_SQRT);
+    check_result("(-3)^2", "9"); drop();
+
+    /* 0^2 = 0 */
+    type_number("0"); lshift_key(BTN_SQRT);
+    check_result("0^2", "0"); drop();
+}
+
+static void test_more_arithmetic(void)
+{
+    printf("\n--- More Arithmetic ---\n");
+
+    /* 0 + 0 = 0 */
+    type_number("0"); press_key(BTN_ENTER); type_number("0"); press_key(BTN_PLUS);
+    check_result("0 + 0", "0"); drop();
+
+    /* 1 / 7 (repeating) */
+    type_number("1"); press_key(BTN_ENTER); type_number("7"); press_key(BTN_DIV);
+    check_result("1 / 7", ".142857142857"); drop();
+
+    /* 1 / 3 (repeating) */
+    type_number("1"); press_key(BTN_ENTER); type_number("3"); press_key(BTN_DIV);
+    check_result("1 / 3", ".333333333333"); drop();
+
+    /* Large multiplication: 123456 * 789 = 97406784 */
+    type_number("123456"); press_key(BTN_ENTER); type_number("789"); press_key(BTN_MUL);
+    check_result("123456 * 789", "97406784"); drop();
+
+    /* Subtraction yielding negative */
+    type_number("3"); press_key(BTN_ENTER); type_number("10"); press_key(BTN_MINUS);
+    check_result("3 - 10", "-7"); drop();
+
+    /* Large power */
+    type_number("2"); press_key(BTN_ENTER); type_number("20"); press_key(BTN_POWER);
+    check_result("2^20", "1048576"); drop();
+}
+
+static void test_trig_identities(void)
+{
+    printf("\n--- Trigonometric Identities ---\n");
+
+    /* sin^2(30) + cos^2(30) ≈ 1 (floating point) */
+    type_number("30"); press_key(BTN_SIN); lshift_key(BTN_SQRT);  /* sin(30)^2 */
+    type_number("30"); press_key(BTN_COS); lshift_key(BTN_SQRT);  /* cos(30)^2 */
+    press_key(BTN_PLUS);
+    check_result("sin^2(30)+cos^2(30)", ".999999999999"); drop();
+
+    /* sin(45) = cos(45) — verify both equal √2/2 */
+    type_number("45"); press_key(BTN_SIN);
+    check_result("sin(45)", ".707106781187"); drop();
+
+    type_number("45"); press_key(BTN_COS);
+    check_result("cos(45)", ".707106781187"); drop();
+
+    /* sin(60) = cos(30) */
+    type_number("60"); press_key(BTN_SIN);
+    check_result("sin(60)", ".866025403784"); drop();
+
+    type_number("30"); press_key(BTN_COS);
+    check_result("cos(30)", ".866025403784"); drop();
+
+    /* tan = sin/cos: tan(30) = sin(30)/cos(30) */
+    type_number("30"); press_key(BTN_SIN);
+    type_number("30"); press_key(BTN_COS);
+    press_key(BTN_DIV);
+    check_result("sin(30)/cos(30)", ".57735026919"); drop();
+
+    type_number("30"); press_key(BTN_TAN);
+    check_result("tan(30)", ".57735026919"); drop();
+}
+
+static void test_atan2_via_atan(void)
+{
+    /* ATAN2(y,x) for quadrant I can be computed as ATAN(y/x).
+     * We test the ATAN function with known y/x ratios. */
+    printf("\n--- ATAN2 via ATAN (DEG mode, Quadrant I) ---\n");
+
+    /* atan(1/1) = atan(1) = 45° */
+    type_number("1"); lshift_key(BTN_TAN);
+    check_result("atan(1)=atan2(1,1)", "45"); drop();
+
+    /* atan(sqrt(3)) = 60° (i.e., atan2(sqrt3, 1)) */
+    type_number("3"); press_key(BTN_SQRT); lshift_key(BTN_TAN);
+    check_result("atan(sqrt3)=atan2(sqrt3,1)", "60"); drop();
+
+    /* atan(1/sqrt(3)) = 30° (i.e., atan2(1, sqrt3)) */
+    type_number("3"); press_key(BTN_SQRT); press_key(BTN_INV); lshift_key(BTN_TAN);
+    check_result("atan(1/sqrt3)=atan2(1,sqrt3)", "30"); drop();
+
+    /* atan(0) = 0° */
+    type_number("0"); lshift_key(BTN_TAN);
+    check_result("atan(0)=atan2(0,1)", "0"); drop();
+
+    /* atan of large number → 90° */
+    type_number("1000000"); lshift_key(BTN_TAN);
+    check_result("atan(1e6)≈90", "89.9999"); drop();
+
+    /* atan(-1) = -45° */
+    type_number("1"); press_key(BTN_NEG); lshift_key(BTN_TAN);
+    check_result("atan(-1)=atan2(-1,1)", "-45"); drop();
+
+    /* Verify atan(tan(x)) roundtrip */
+    type_number("37"); press_key(BTN_TAN); lshift_key(BTN_TAN);
+    check_result("atan(tan(37))", "37"); drop();
+
+    type_number("73"); press_key(BTN_TAN); lshift_key(BTN_TAN);
+    check_result("atan(tan(73))", "73"); drop();
+}
+
+static void test_polar_rectangular(void)
+{
+    printf("\n--- Polar / Rectangular Conversions (manual) ---\n");
+
+    /* Magnitude of (3, 4) = sqrt(9+16) = 5 */
+    type_number("3"); lshift_key(BTN_SQRT);
+    type_number("4"); lshift_key(BTN_SQRT);
+    press_key(BTN_PLUS); press_key(BTN_SQRT);
+    check_result("|3+4i|", "5"); drop();
+
+    /* Angle of (3, 4) = atan(4/3) ≈ 53.1301023542 */
+    type_number("4"); press_key(BTN_ENTER); type_number("3"); press_key(BTN_DIV);
+    lshift_key(BTN_TAN);
+    check_result("arg(3+4i)", "53.130102354"); drop();
+
+    /* Magnitude of (5, 12) = 13 */
+    type_number("5"); lshift_key(BTN_SQRT);
+    type_number("12"); lshift_key(BTN_SQRT);
+    press_key(BTN_PLUS); press_key(BTN_SQRT);
+    check_result("|5+12i|", "13"); drop();
+
+    /* Polar to rectangular: r=10, θ=30°
+     * x = 10*cos(30) = 8.66025403784
+     * y = 10*sin(30) = 5 */
+    type_number("10"); press_key(BTN_ENTER); type_number("30"); press_key(BTN_COS);
+    press_key(BTN_MUL);
+    check_result("r=10,θ=30: x", "8.66025403784"); drop();
+
+    type_number("10"); press_key(BTN_ENTER); type_number("30"); press_key(BTN_SIN);
+    press_key(BTN_MUL);
+    check_result("r=10,θ=30: y", "5"); drop();
+
+    /* Polar to rectangular: r=2, θ=60°
+     * x = 2*cos(60) = 1, y = 2*sin(60) = √3 ≈ 1.73205080757 */
+    type_number("2"); press_key(BTN_ENTER); type_number("60"); press_key(BTN_COS);
+    press_key(BTN_MUL);
+    check_result("r=2,θ=60: x", "1"); drop();
+
+    type_number("2"); press_key(BTN_ENTER); type_number("60"); press_key(BTN_SIN);
+    press_key(BTN_MUL);
+    check_result("r=2,θ=60: y", "1.73205080757"); drop();
+
+    /* Roundtrip: rect→polar→rect for (1, 1)
+     * r = sqrt(2), θ = 45°
+     * x = sqrt(2)*cos(45) = 1, y = sqrt(2)*sin(45) = 1 */
+    type_number("2"); press_key(BTN_SQRT);  /* r = sqrt(2) */
+    press_key(BTN_ENTER);
+    type_number("45"); press_key(BTN_COS);
+    press_key(BTN_MUL);
+    check_result("roundtrip x", ".9999999999"); drop();
+
+    type_number("2"); press_key(BTN_SQRT);
+    press_key(BTN_ENTER);
+    type_number("45"); press_key(BTN_SIN);
+    press_key(BTN_MUL);
+    check_result("roundtrip y", ".9999999999"); drop();
+}
+
+static void test_inverse_trig_roundtrips(void)
+{
+    printf("\n--- Inverse Trig Roundtrips ---\n");
+
+    /* asin(sin(x)) = x for various angles */
+    type_number("15"); press_key(BTN_SIN); lshift_key(BTN_SIN);
+    check_result("asin(sin(15))", "15"); drop();
+
+    type_number("72"); press_key(BTN_SIN); lshift_key(BTN_SIN);
+    check_result("asin(sin(72))", "72"); drop();
+
+    /* acos(cos(x)) = x */
+    type_number("25"); press_key(BTN_COS); lshift_key(BTN_COS);
+    check_result("acos(cos(25))", "25"); drop();
+
+    type_number("80"); press_key(BTN_COS); lshift_key(BTN_COS);
+    check_result("acos(cos(80))", "80"); drop();
+
+    /* atan(tan(x)) = x */
+    type_number("10"); press_key(BTN_TAN); lshift_key(BTN_TAN);
+    check_result("atan(tan(10))", "9.99999999"); drop();
+
+    type_number("55"); press_key(BTN_TAN); lshift_key(BTN_TAN);
+    check_result("atan(tan(55))", "55"); drop();
+
+    type_number("89"); press_key(BTN_TAN); lshift_key(BTN_TAN);
+    check_result("atan(tan(89))", "89"); drop();
+}
+
+static void test_edge_cases(void)
+{
+    printf("\n--- Edge Cases ---\n");
+
+    /* Very small number */
+    type_number("0.000001"); press_key(BTN_ENTER);
+    check_result("enter 1E-6", ".000001"); drop();
+
+    /* Large number */
+    type_number("999999999999"); press_key(BTN_ENTER);
+    check_result("enter 999999999999", "999999999999"); drop();
+
+    /* 0 * anything = 0 */
+    type_number("0"); press_key(BTN_ENTER); type_number("12345"); press_key(BTN_MUL);
+    check_result("0 * 12345", "0"); drop();
+
+    /* x / x = 1 */
+    type_number("7"); press_key(BTN_ENTER); type_number("7"); press_key(BTN_DIV);
+    check_result("7 / 7", "1"); drop();
+
+    /* x - x = 0 */
+    type_number("42"); press_key(BTN_ENTER); type_number("42"); press_key(BTN_MINUS);
+    check_result("42 - 42", "0"); drop();
+
+    /* sqrt(0) = 0 */
+    type_number("0"); press_key(BTN_SQRT);
+    check_result("sqrt(0)", "0"); drop();
+
+    /* 1/1 = 1 */
+    type_number("1"); press_key(BTN_INV);
+    check_result("1/1", "1"); drop();
+
+    /* Note: 0^0 intentionally not tested — produces error on HP-48 */
+}
+
+static void test_log_power_identities(void)
+{
+    printf("\n--- Log/Power Identities ---\n");
+
+    /* 10^(log(50)) = 50 */
+    type_number("50"); rshift_key(BTN_POWER);  /* log(50) */
+    lshift_key(BTN_POWER);                      /* 10^(log(50)) = 50 */
+    check_result("10^log(50)", "50"); drop();
+
+    /* e^(ln(7)) = 7 */
+    type_number("7"); rshift_key(BTN_INV);     /* ln(7) */
+    lshift_key(BTN_INV);                        /* e^(ln(7)) = 7 */
+    check_result("e^ln(7)", "7"); drop();
+
+    /* log(10^5) = 5 */
+    type_number("5"); lshift_key(BTN_POWER);   /* 10^5 */
+    rshift_key(BTN_POWER);                      /* log(10^5) = 5 */
+    check_result("log(10^5)", "5"); drop();
+
+    /* ln(e^3) = 3 */
+    type_number("3"); lshift_key(BTN_INV);     /* e^3 */
+    rshift_key(BTN_INV);                        /* ln(e^3) = 3 */
+    check_result("ln(e^3)", "3"); drop();
+}
+
+static void test_reciprocal_and_sign(void)
+{
+    printf("\n--- Reciprocal and Sign ---\n");
+
+    /* 1/(1/5) = 5 */
+    type_number("5"); press_key(BTN_INV); press_key(BTN_INV);
+    check_result("1/(1/5)", "5"); drop();
+
+    /* 1/0.01 = 100 */
+    type_number("0.01"); press_key(BTN_INV);
+    check_result("1/0.01", "100"); drop();
+
+    /* negate twice returns original */
+    type_number("42"); press_key(BTN_NEG); press_key(BTN_NEG);
+    press_key(BTN_ENTER);
+    check_result("neg(neg(42))", "42"); drop();
+
+    /* -1 * -1 = 1 */
+    type_number("1"); press_key(BTN_NEG); press_key(BTN_ENTER);
+    type_number("1"); press_key(BTN_NEG);
+    press_key(BTN_MUL);
+    check_result("-1 * -1", "1"); drop();
+}
+
 /* --- Run all tests --- */
 static void run_all_tests(void)
 {
@@ -343,14 +742,26 @@ static void run_all_tests(void)
     press_key(BTN_ON);   wait_computation(300);
     clear_stack();
 
-    test_basic_arithmetic();   clear_stack();
-    test_decimal_numbers();    clear_stack();
-    test_negative_numbers();   clear_stack();
-    test_powers_and_roots();   clear_stack();
-    test_trigonometry();       clear_stack();
-    test_stack_operations();   clear_stack();
-    test_larger_computations();clear_stack();
-    test_chained_operations();
+    test_basic_arithmetic();        clear_stack();
+    test_decimal_numbers();         clear_stack();
+    test_negative_numbers();        clear_stack();
+    test_powers_and_roots();        clear_stack();
+    test_x_squared();               clear_stack();
+    test_trigonometry();            clear_stack();
+    test_inverse_trig();            clear_stack();
+    test_trig_identities();         clear_stack();
+    test_logarithms();              clear_stack();
+    test_exponentials();            clear_stack();
+    test_log_power_identities();    clear_stack();
+    test_reciprocal_and_sign();     clear_stack();
+    test_more_arithmetic();         clear_stack();
+    test_stack_operations();        clear_stack();
+    test_larger_computations();     clear_stack();
+    test_chained_operations();      clear_stack();
+    test_atan2_via_atan();           clear_stack();
+    test_inverse_trig_roundtrips(); clear_stack();
+    test_polar_rectangular();       clear_stack();
+    test_edge_cases();
 
     printf("\n======================\n");
     printf("Results: %d passed, %d failed, %d total\n",
