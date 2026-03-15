@@ -30,7 +30,9 @@
 #include "global.h"
 #include "resources.h"
 
+#ifndef MAC_BUILD
 #include <android/log.h>
+#endif
 #include "x48.h"
 
 char errbuf[1024] = { 0, };

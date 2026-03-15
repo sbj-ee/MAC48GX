@@ -192,6 +192,7 @@ short audio_buf_short [32768];
 static int freq_counter = 0;
 static char speaker_state = 0;
 
+#ifndef MAC_BUILD
 jint
 Java_org_ab_x48_X48_fillAudioData( JNIEnv*  env, jobject  this, jshortArray array) {
 
@@ -233,6 +234,7 @@ Java_org_ab_x48_X48_fillAudioData( JNIEnv*  env, jobject  this, jshortArray arra
 	//last_time = now;
 	return numSamples;
 }
+#endif /* MAC_BUILD */
 
 
 void

@@ -29,8 +29,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#ifndef MAC_BUILD
 #include <android/log.h>
-
+#endif
 #include "global.h"
 #include "resources.h"
 #include "romio.h"

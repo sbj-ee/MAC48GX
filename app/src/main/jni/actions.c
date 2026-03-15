@@ -599,7 +599,6 @@ do_shutdown()
 {
   int wake, alarms;
   t1_t2_ticks ticks;
-
   if (device.display_touched) {
     device.display_touched = 0;
     update_display();

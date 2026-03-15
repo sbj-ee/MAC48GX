@@ -59,6 +59,9 @@
  */
 
 
+#ifndef _X48_H
+#define _X48_H 1
+
 #include "global.h"
 #include <pthread.h>
 
@@ -83,17 +86,26 @@
 #define UNDERLAY	18
 #define BLACK		19
 
-#include <android/log.h> 
+#ifndef MAC_BUILD
+#include <android/log.h>
 #include <jni.h>
-#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, "x48",  __VA_ARGS__) 
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG  , "x48",  __VA_ARGS__) 
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO   , "x48",  __VA_ARGS__) 
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN   , "x48",  __VA_ARGS__) 
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "x48",  __VA_ARGS__) 
+#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, "x48",  __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG  , "x48",  __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO   , "x48",  __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN   , "x48",  __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "x48",  __VA_ARGS__)
+#else /* MAC_BUILD */
+#include <stdio.h>
+#define LOGV(...) fprintf(stdout, __VA_ARGS__)
+#define LOGD(...) fprintf(stdout, __VA_ARGS__)
+#define LOGI(...) fprintf(stdout, __VA_ARGS__)
+#define LOGW(...) fprintf(stderr, __VA_ARGS__)
+#define LOGE(...) fprintf(stderr, __VA_ARGS__)
+#endif /* MAC_BUILD */
 
 /* TODO */
 typedef struct XColor {
-	int dummy;
+	int pixel;
 } XColor;
 typedef struct Window {
 	int dummy;
@@ -147,9 +159,11 @@ typedef struct disp_t {
 
 extern disp_t   disp;
 
+#ifndef MAC_BUILD
 extern JNIEnv *android_env;
 extern jobject android_callback;
 extern jmethodID waitEvent;
+#endif /* MAC_BUILD */
 
 extern Display *dpy;
 extern int	screen;
@@ -176,8 +190,13 @@ extern void XCopyPlane __ProtoType__((Display *dpy, Pixmap map, Window win, GC g
 
 extern void XClearWindow __ProtoType__((Display *dpy, Window win));
 
+#ifndef MAC_BUILD
 static pthread_cond_t  uiConditionVariable  = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t uiConditionMutex     = PTHREAD_MUTEX_INITIALIZER;
+#else /* MAC_BUILD */
+extern pthread_cond_t  uiConditionVariable;
+extern pthread_mutex_t uiConditionMutex;
+#endif /* MAC_BUILD */
 
 extern int
 #ifdef __FunctionProto__
@@ -192,3 +211,5 @@ button_released(int b);
 #else
 button_released(b);
 #endif
+
+#endif /* _X48_H */
