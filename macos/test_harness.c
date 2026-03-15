@@ -1,13 +1,13 @@
 /*
- * test_harness.c — Headless test runner for droid48-mac emulator.
- * Copyright (C) 2026  droid48-mac contributors
+ * test_harness.c — Headless test runner for MAC48GX emulator.
+ * Copyright (C) 2026  MAC48GX contributors
  * Licensed under the GNU General Public License v3.0.
  *
  * Build:  make test       (from macos/ directory)
  * Run:    build/droid48-test
  *
  * Does NOT require SDL2 — links only against the emulator core + pthread.
- * For visual test mode with the calculator GUI, use: ./droid48-mac --test
+ * For visual test mode with the calculator GUI, use: ./MAC48GX --test
  */
 
 #include <stdio.h>
@@ -32,8 +32,8 @@
 
 /* --- Globals required by the emulator core --- */
 
-char  *progname    = "droid48-test";
-char  *res_name    = "droid48";
+char  *progname    = "MAC48GX-test";
+char  *res_name    = "MAC48GX";
 char  *res_class   = "Droid48";
 int    saved_argc  = 0;
 char **saved_argv  = NULL;
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
     struct itimerval it;
     char exe_dir[256];
 
-    printf("droid48-mac test suite (headless)\n");
+    printf("MAC48GX test suite (headless)\n");
     printf("=================================\n");
 
     strncpy(exe_dir, argv[0], 255); exe_dir[255] = '\0';

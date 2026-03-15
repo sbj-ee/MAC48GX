@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>droid48</string>
+    <string>MAC48GX</string>
     <key>CFBundleDisplayName</key>
-    <string>droid48 Calculator</string>
+    <string>MAC48GX Calculator</string>
     <key>CFBundleIdentifier</key>
-    <string>com.droid48.mac</string>
+    <string>com.mac48gx.app</string>
     <key>CFBundleVersion</key>
     <string>0.1.1</string>
     <key>CFBundleShortVersionString</key>
     <string>0.1.1</string>
     <key>CFBundleExecutable</key>
-    <string>droid48-mac</string>
+    <string>MAC48GX</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleSignature</key>
     <string>D48M</string>
     <key>CFBundleIconFile</key>
-    <string>droid48</string>
+    <string>MAC48GX</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>

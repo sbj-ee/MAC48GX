@@ -125,7 +125,7 @@ button_t buttons[] = {
 
   { "COLON", 0,0, 0x04,   0,100, 36,26, WHITE, 0,0, colon_width,colon_height,colon_bits, "M", "UP", 0, "HOME", 0, 0 },
   { "STO",   0,0, 0x64,  50,100, 36,26, WHITE, "STO",  0,0,0,0, "N",  "DEF",   0, "RCL",    0, 0 },
-  { "EVAL",  0,0, 0x63, 100,100, 36,26, WHITE, "EVAL", 0,0,0,0, "O",  "aNUM",  0, "UNDO",   0, 0 },
+  { "EVAL",  0,0, 0x63, 100,100, 36,26, WHITE, "EVAL", 0,0,0,0, "O",  "\xe2\x86\x92NUM",  0, "UNDO",   0, 0 },
   { "LEFT",  0,0, 0x62, 150,100, 36,26, WHITE, 0,0, left_width,left_height,left_bits,   "P", "PICTURE", 0, 0, 0, 0 },
   { "DOWN",  0,0, 0x61, 200,100, 36,26, WHITE, 0,0, down_width,down_height,down_bits,   "Q", "VIEW",    0, 0, 0, 0 },
   { "RIGHT", 0,0, 0x60, 250,100, 36,26, WHITE, 0,0, right_width,right_height,right_bits,"R", "SWAP",    0, 0, 0, 0 },

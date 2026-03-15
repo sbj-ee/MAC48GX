@@ -1,7 +1,7 @@
 /*
- * main_sdl.c - macOS/SDL2 main for droid48/x48 emulator.
+ * main_sdl.c - macOS/SDL2 main for MAC48GX/x48 emulator.
  *
- * Copyright (C) 2026  droid48-mac contributors
+ * Copyright (C) 2026  MAC48GX contributors
  * Based on x48 by Eddie C. Dost (Copyright (C) 1994-2005)
  * and droid48 by Arnaud Brochard (shagr4th)
  *
@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <math.h>
 #include <pthread.h>
 #include <pwd.h>
 
@@ -47,8 +48,8 @@
  * Globals required by the emulator core
  * ------------------------------------------------------------------ */
 
-char  *progname    = "droid48-mac";
-char  *res_name    = "droid48";
+char  *progname    = "MAC48GX";
+char  *res_name    = "MAC48GX";
 char  *res_class   = "Droid48";
 
 int    saved_argc  = 0;
@@ -186,7 +187,7 @@ static void ensure_data_files(const char *exe_dir)
         if (found) {
             copy_asset(src, full_rom);
         } else {
-            fprintf(stderr, "droid48-mac: cannot find ROM file.\n"
+            fprintf(stderr, "MAC48GX: cannot find ROM file.\n"
                     "Please copy a HP-48 ROM image to %s\n", full_rom);
         }
     }
@@ -602,6 +603,32 @@ static const char *trim_label(const char *s, char *buf, int bufsz)
  * Text drawing helpers
  * ------------------------------------------------------------------ */
 
+/* Draw a filled rounded rectangle */
+static void fill_rounded_rect(SDL_Renderer *renderer, int x, int y, int w, int h, int rad)
+{
+    int i, dx, dy;
+    /* Center body */
+    SDL_Rect center = { x + rad, y, w - 2*rad, h };
+    SDL_RenderFillRect(renderer, &center);
+    /* Left and right strips */
+    SDL_Rect left_strip  = { x, y + rad, rad, h - 2*rad };
+    SDL_Rect right_strip = { x + w - rad, y + rad, rad, h - 2*rad };
+    SDL_RenderFillRect(renderer, &left_strip);
+    SDL_RenderFillRect(renderer, &right_strip);
+    /* Four corners using filled circles */
+    for (dy = -rad; dy <= rad; dy++) {
+        dx = (int)(sqrt((double)(rad*rad - dy*dy)) + 0.5);
+        /* top-left */
+        SDL_RenderDrawLine(renderer, x+rad-dx, y+rad+dy, x+rad, y+rad+dy);
+        /* top-right */
+        SDL_RenderDrawLine(renderer, x+w-rad, y+rad+dy, x+w-rad+dx, y+rad+dy);
+        /* bottom-left */
+        SDL_RenderDrawLine(renderer, x+rad-dx, y+h-rad+dy, x+rad, y+h-rad+dy);
+        /* bottom-right */
+        SDL_RenderDrawLine(renderer, x+w-rad, y+h-rad+dy, x+w-rad+dx, y+h-rad+dy);
+    }
+}
+
 /* Draw text centered in a rectangle */
 static void draw_text_centered(SDL_Renderer *renderer, TTF_Font *font,
                                 const char *text, SDL_Color color,
@@ -725,22 +752,10 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
             /* All other keys: dark/black */
             SDL_SetRenderDrawColor(renderer, 32, 32, 36, 255);
         }
-        SDL_RenderFillRect(renderer, &r);
-
-        /* Button border — subtle highlight on top/left, shadow on bottom/right */
-        if (i < 6) {
-            SDL_SetRenderDrawColor(renderer, 190, 195, 195, 255);
-        } else {
-            SDL_SetRenderDrawColor(renderer, 55, 55, 60, 255);
+        {
+            int rad = (i < 6) ? 4 : 5;
+            fill_rounded_rect(renderer, sx, sy, sw, sh, rad);
         }
-        SDL_RenderDrawLine(renderer, sx, sy, sx + sw - 1, sy);           /* top */
-        SDL_RenderDrawLine(renderer, sx, sy, sx, sy + sh - 1);           /* left */
-        if (i < 6)
-            SDL_SetRenderDrawColor(renderer, 120, 125, 125, 255);
-        else
-            SDL_SetRenderDrawColor(renderer, 20, 20, 24, 255);
-        SDL_RenderDrawLine(renderer, sx, sy+sh-1, sx+sw-1, sy+sh-1);    /* bottom */
-        SDL_RenderDrawLine(renderer, sx+sw-1, sy, sx+sw-1, sy+sh-1);    /* right */
 
         /* ---- Button face label ---- */
         if (i < 6) {
@@ -868,7 +883,7 @@ static void render(SDL_Renderer *renderer, SDL_Texture *lcd_tex)
 #define APP_VERSION "dev"
 #endif
         char title_buf[64];
-        snprintf(title_buf, sizeof(title_buf), "droid48 %s", APP_VERSION);
+        snprintf(title_buf, sizeof(title_buf), "MAC48GX %s", APP_VERSION);
         draw_text_left(renderer, font_title, title_buf, clr_title,
                        LCD_X, BTN_Y - 12, 0);
     }
@@ -1011,7 +1026,7 @@ int main(int argc, char **argv)
 
     {
         char win_title[64];
-        snprintf(win_title, sizeof(win_title), "droid48-mac %s", APP_VERSION);
+        snprintf(win_title, sizeof(win_title), "MAC48GX %s", APP_VERSION);
         window = SDL_CreateWindow(win_title,
                               SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               WIN_W, WIN_H, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
@@ -1049,7 +1064,7 @@ int main(int argc, char **argv)
     if (test_mode)
     {
         char test_title[64];
-        snprintf(test_title, sizeof(test_title), "droid48-mac %s — TEST MODE", APP_VERSION);
+        snprintf(test_title, sizeof(test_title), "MAC48GX %s — TEST MODE", APP_VERSION);
         SDL_SetWindowTitle(window, test_title);
     }
 

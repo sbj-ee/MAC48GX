@@ -1,4 +1,4 @@
-# Makefile for droid48-mac
+# Makefile for MAC48GX
 # Usage: make -f Makefile  (from the macos/ directory)
 
 JNI  := ../app/src/main/jni
@@ -47,7 +47,7 @@ MAC_SRCS := \
 SRCS := $(CORE_SRCS) $(MAC_SRCS)
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(notdir $(SRCS)))
 
-TARGET := $(BUILD)/droid48-mac
+TARGET := $(BUILD)/MAC48GX
 
 # Test build — no SDL2 dependency, uses test_harness.c instead of main_sdl.c
 TEST_SRCS := $(CORE_SRCS) $(MAC)/x48_sdl.c $(MAC)/lcd_mac.c $(MAC)/test_harness.c
@@ -63,9 +63,9 @@ TEST_CFLAGS := -std=gnu11 -O2 \
                -Wno-unused-function \
                -Wno-deprecated-non-prototype
 
-TEST_TARGET := $(BUILD)/droid48-test
+TEST_TARGET := $(BUILD)/MAC48GX-test
 
-APP_NAME   := droid48.app
+APP_NAME   := MAC48GX.app
 APP_DIR    := $(BUILD)/$(APP_NAME)
 
 .PHONY: all clean run test bundle dmg
@@ -114,9 +114,9 @@ bundle: all
 	@echo "--- Creating $(APP_NAME) bundle ($(VERSION)) ---"
 	@mkdir -p "$(APP_DIR)/Contents/MacOS"
 	@mkdir -p "$(APP_DIR)/Contents/Resources"
-	@cp $(TARGET) "$(APP_DIR)/Contents/MacOS/droid48-mac"
+	@cp $(TARGET) "$(APP_DIR)/Contents/MacOS/MAC48GX"
 	@sed 's/0\.1\.1/$(VERSION)/g' $(MAC)/Info.plist > "$(APP_DIR)/Contents/Info.plist"
-	@cp $(MAC)/droid48.icns "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
+	@cp $(MAC)/MAC48GX.icns "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
 	@cp $(ASSETS)/Asana-Math.ttf "$(APP_DIR)/Contents/Resources/" 2>/dev/null || true
 	@cp -n $(JNI)/rom "$(APP_DIR)/Contents/Resources/rom" 2>/dev/null || true
 	@cp -n $(JNI)/ram "$(APP_DIR)/Contents/Resources/ram" 2>/dev/null || true
@@ -126,7 +126,7 @@ bundle: all
 	@echo "    Or drag to /Applications"
 
 # DMG installer image
-DMG_NAME := droid48-mac-$(VERSION).dmg
+DMG_NAME := MAC48GX-$(VERSION).dmg
 
 dmg: bundle
 	@echo "--- Creating $(DMG_NAME) ---"
@@ -134,7 +134,7 @@ dmg: bundle
 	@mkdir -p "$(BUILD)/dmg-staging"
 	@cp -R "$(APP_DIR)" "$(BUILD)/dmg-staging/"
 	@ln -sf /Applications "$(BUILD)/dmg-staging/Applications"
-	@hdiutil create -volname "droid48 $(VERSION)" \
+	@hdiutil create -volname "MAC48GX $(VERSION)" \
 		-srcfolder "$(BUILD)/dmg-staging" \
 		-ov -format UDZO \
 		"$(BUILD)/$(DMG_NAME)" > /dev/null
