@@ -18,6 +18,8 @@
     <string>APPL</string>
     <key>CFBundleSignature</key>
     <string>HP48</string>
+    <key>CFBundleIconFile</key>
+    <string>HP48GX</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
