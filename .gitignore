@@ -42,3 +42,4 @@ app/app-all-release.apk
 org.eclipse.buildship.core.prefs
 .project
 .classpath
+.env
