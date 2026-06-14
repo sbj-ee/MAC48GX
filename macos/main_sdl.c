@@ -977,6 +977,8 @@ int main(int argc, char **argv)
     struct sigaction sa;
     struct itimerval it;
     int pressed_btn = -1;
+    int pending_release = 0;   /* release event queued but not yet sent */
+    Uint32 release_after_ms = 0; /* send release no earlier than this tick */
     int test_mode = 0;
     static int test_delay = 0;
     char exe_dir[256];
@@ -1187,25 +1189,32 @@ int main(int argc, char **argv)
                     SDL_RenderWindowToLogical(renderer, ev.button.x, ev.button.y, &lx, &ly);
                     int b = hit_test((int)lx, (int)ly);
                     if (b >= 0) {
+                        /* Flush any pending release from a prior click */
+                        if (pending_release) {
+                            sdl_push_event(pressed_btn + 100);
+                            got_alarm = 1;
+                            pthread_mutex_lock(&uiConditionMutex);
+                            pthread_cond_signal(&uiConditionVariable);
+                            pthread_mutex_unlock(&uiConditionMutex);
+                            pending_release = 0;
+                        }
                         pressed_btn = b;
                         sdl_push_event(b + 1);
                         got_alarm = 1;
                         pthread_mutex_lock(&uiConditionMutex);
                         pthread_cond_signal(&uiConditionVariable);
                         pthread_mutex_unlock(&uiConditionMutex);
+                        /* Guarantee ≥80ms hold so HP-48 keyboard timer fires */
+                        release_after_ms = SDL_GetTicks() + 80;
                     }
                 }
                 break;
 
             case SDL_MOUSEBUTTONUP:
-                if (ev.button.button == SDL_BUTTON_LEFT && pressed_btn >= 0) {
-                    sdl_push_event(pressed_btn + 100);
-                    got_alarm = 1;
-                    pthread_mutex_lock(&uiConditionMutex);
-                    pthread_cond_signal(&uiConditionVariable);
-                    pthread_mutex_unlock(&uiConditionMutex);
-                    pressed_btn = -1;
-                }
+                /* Mark that the physical click ended; actual release fires in
+                 * the main loop once release_after_ms has elapsed. */
+                if (ev.button.button == SDL_BUTTON_LEFT && pressed_btn >= 0)
+                    pending_release = 1;
                 break;
 
             case SDL_KEYDOWN: {
@@ -1399,6 +1408,19 @@ int main(int argc, char **argv)
             draw_text_centered(renderer, font_btn_sm, "Licensed under GPL-3.0", g, WIN_W/2, y, 0); y += 35;
             draw_text_centered(renderer, font_btn_sm, "Click or press Esc to dismiss", gy, WIN_W/2, y, 0);
             SDL_RenderPresent(renderer);
+        }
+
+        /* Deferred mouse release: send release once ≥80ms have elapsed since
+         * the press (matches test-harness timing; ensures HP-48 keyboard
+         * timer fires at least once while the key bit is set). */
+        if (pending_release && SDL_GetTicks() >= release_after_ms) {
+            sdl_push_event(pressed_btn + 100);
+            got_alarm = 1;
+            pthread_mutex_lock(&uiConditionMutex);
+            pthread_cond_signal(&uiConditionVariable);
+            pthread_mutex_unlock(&uiConditionMutex);
+            pressed_btn = -1;
+            pending_release = 0;
         }
 
         update_audio();

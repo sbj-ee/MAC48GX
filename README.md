@@ -9,7 +9,7 @@ This port compiles the C emulator core natively for macOS and replaces the Andro
 - Full Saturn CPU emulation (unchanged C core from x48/droid48)
 - SDL2 window with calculator face — rounded buttons, proper math symbols (÷ × ∂ ∫ Σ π ∠ →)
 - Left-shift (purple) and right-shift (green) overlay labels using Asana-Math font
-- Mouse click and keyboard input with hand cursor on buttons
+- Mouse click and keyboard input with hand cursor on buttons (Retina/HiDPI-accurate)
 - Sound output (speaker beeps and tones via SDL2 audio)
 - Button press effect (physical 2px depression)
 - Copy/paste: Cmd+C copies stack to clipboard, Cmd+V pastes numbers
@@ -40,18 +40,46 @@ make dmg          # create DMG installer
 make test         # run 148 headless tests
 ```
 
-### Universal build (x86_64 + arm64)
+### Apple Silicon only (arm64)
 
-Download the official prebuilt universal SDL2 framework DMGs from the SDL GitHub releases, then build with both architecture slices:
+Use this when you only need to run on Apple Silicon, or when Homebrew SDL2
+is x86_64-only (Intel Homebrew at `/usr/local`):
 
 ```bash
-# Download official universal SDL2 frameworks
 curl -LO https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.dmg
 curl -LO https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.dmg
 hdiutil attach SDL2-2.32.10.dmg -mountpoint /Volumes/SDL2
 hdiutil attach SDL2_ttf-2.24.0.dmg -mountpoint /Volumes/SDL2_ttf
 
-# Build universal DMG
+cd macos
+make dmg \
+  ARCH="-arch arm64" \
+  "CFLAGS=-std=gnu11 -O2 -arch arm64 -I. -I../app/src/main/jni \
+   -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
+   -DAPP_VERSION='\"$(git describe --tags --abbrev=0)\"' \
+   -I/Volumes/SDL2/SDL2.framework/Headers \
+   -Wno-implicit-function-declaration -Wno-incompatible-pointer-types \
+   -Wno-int-conversion -Wno-unused-variable -Wno-unused-function \
+   -Wno-deprecated-non-prototype" \
+  "LDFLAGS=-arch arm64 \
+   -F/Volumes/SDL2 -framework SDL2 \
+   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread \
+   -rpath @executable_path/../Frameworks" \
+  "FRAMEWORK_DIRS=/Volumes/SDL2 /Volumes/SDL2_ttf"
+
+hdiutil detach /Volumes/SDL2 && hdiutil detach /Volumes/SDL2_ttf
+```
+
+### Universal build (x86_64 + arm64)
+
+Download the official prebuilt universal SDL2 framework DMGs from the SDL GitHub releases, then build with both architecture slices:
+
+```bash
+curl -LO https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.dmg
+curl -LO https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.dmg
+hdiutil attach SDL2-2.32.10.dmg -mountpoint /Volumes/SDL2
+hdiutil attach SDL2_ttf-2.24.0.dmg -mountpoint /Volumes/SDL2_ttf
+
 cd macos
 make dmg \
   ARCH="-arch x86_64 -arch arm64" \
@@ -64,10 +92,11 @@ make dmg \
    -Wno-deprecated-non-prototype" \
   "LDFLAGS=-arch x86_64 -arch arm64 \
    -F/Volumes/SDL2 -framework SDL2 \
-   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread"
+   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread \
+   -rpath @executable_path/../Frameworks" \
+  "FRAMEWORK_DIRS=/Volumes/SDL2 /Volumes/SDL2_ttf"
 
-hdiutil detach /Volumes/SDL2
-hdiutil detach /Volumes/SDL2_ttf
+hdiutil detach /Volumes/SDL2 && hdiutil detach /Volumes/SDL2_ttf
 ```
 
 Binary: `macos/build/MAC48GX`
@@ -170,6 +199,20 @@ app/src/main/assets/
 - **Jamie Zawinski** — xscreensaver resource code (MIT).
 - **SDL2** / **SDL2_ttf** — zlib license.
 - **Asana-Math** — math symbol font from droid48 assets.
+
+## Changelog
+
+### v1.0.2
+- Fixed mouse button clicks on Retina/HiDPI displays: SDL2 with `SDL_WINDOW_ALLOW_HIGHDPI` delivers mouse events in physical pixels while rendering uses logical coordinates — all clicks missed by 2×. Fixed with `SDL_RenderWindowToLogical`.
+- Fixed single-click reliability: press and release events sent back-to-back before the HP-48 keyboard timer could fire. Release now deferred ≥80ms to match emulator timing requirements.
+- Added snap-to-nearest fallback in hit-test to bridge inter-button gaps.
+
+### v1.0.1
+- Fixed `-rpath @executable_path/../Frameworks` missing from DMG build LDFLAGS (app crashed on launch with missing SDL2 library).
+- Added `*.dmg` to `.gitignore`.
+
+### v1.0.0
+- Initial release: SDL2 port with full Saturn CPU emulation, 148 automated tests, universal binary (x86_64 + arm64), DMG installer.
 
 ## License
 
