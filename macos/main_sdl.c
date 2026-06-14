@@ -440,7 +440,21 @@ static int hit_test(int mx, int my)
         if (mx >= sx && mx < sx + sw && my >= sy && my < sy + sh)
             return i;
     }
-    return -1;
+    /* Second pass: nearest button within snap distance (fills inter-button gaps) */
+    int best = -1;
+    int best_dist = 18 * 18;
+    for (i = 0; i < NUM_BUTTONS; i++) {
+        int sx = btn_to_screen_x(buttons[i].x);
+        int sy = btn_to_screen_y(buttons[i].y);
+        int sw = btn_screen_w(buttons[i].w);
+        int sh = btn_screen_h(buttons[i].h);
+        int ex = (mx < sx) ? sx : (mx >= sx + sw) ? sx + sw - 1 : mx;
+        int ey = (my < sy) ? sy : (my >= sy + sh) ? sy + sh - 1 : my;
+        int dx = mx - ex, dy = my - ey;
+        int dist = dx * dx + dy * dy;
+        if (dist < best_dist) { best_dist = dist; best = i; }
+    }
+    return best;
 }
 
 /* Map SDL keysym to button index (-1 if none) */
@@ -1148,7 +1162,9 @@ int main(int argc, char **argv)
 
             case SDL_MOUSEMOTION: {
                 /* Change cursor to hand when hovering over buttons */
-                int b = hit_test(ev.motion.x, ev.motion.y);
+                float lx, ly;
+                SDL_RenderWindowToLogical(renderer, ev.motion.x, ev.motion.y, &lx, &ly);
+                int b = hit_test((int)lx, (int)ly);
                 if (b >= 0 && !current_cursor_is_hand) {
                     SDL_SetCursor(cursor_hand);
                     current_cursor_is_hand = 1;
@@ -1167,7 +1183,9 @@ int main(int argc, char **argv)
                         show_about = 0;
                         break;
                     }
-                    int b = hit_test(ev.button.x, ev.button.y);
+                    float lx, ly;
+                    SDL_RenderWindowToLogical(renderer, ev.button.x, ev.button.y, &lx, &ly);
+                    int b = hit_test((int)lx, (int)ly);
                     if (b >= 0) {
                         pressed_btn = b;
                         sdl_push_event(b + 1);

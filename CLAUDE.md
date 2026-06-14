@@ -38,7 +38,8 @@ make dmg \
    -Wno-deprecated-non-prototype" \
   "LDFLAGS=-arch x86_64 -arch arm64 \
    -F/Volumes/SDL2 -framework SDL2 \
-   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread" \
+   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread \
+   -rpath @executable_path/../Frameworks" \
   "FRAMEWORK_DIRS=/Volumes/SDL2 /Volumes/SDL2_ttf"
 
 hdiutil detach /Volumes/SDL2 && hdiutil detach /Volumes/SDL2_ttf
@@ -66,7 +67,8 @@ make dmg \
    -Wno-deprecated-non-prototype" \
   "LDFLAGS=-arch arm64 \
    -F/Volumes/SDL2 -framework SDL2 \
-   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread" \
+   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread \
+   -rpath @executable_path/../Frameworks" \
   "FRAMEWORK_DIRS=/Volumes/SDL2 /Volumes/SDL2_ttf"
 
 hdiutil detach /Volumes/SDL2 && hdiutil detach /Volumes/SDL2_ttf

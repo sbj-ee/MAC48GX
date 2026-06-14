@@ -38,6 +38,9 @@ app/bin
 
 app/app-all-release.apk
 
+# SDL2 framework DMGs (large binaries, download separately)
+*.dmg
+
 #using VSCode now
 org.eclipse.buildship.core.prefs
 .project
