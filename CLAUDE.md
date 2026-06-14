@@ -38,7 +38,36 @@ make dmg \
    -Wno-deprecated-non-prototype" \
   "LDFLAGS=-arch x86_64 -arch arm64 \
    -F/Volumes/SDL2 -framework SDL2 \
-   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread"
+   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread" \
+  "FRAMEWORK_DIRS=/Volumes/SDL2 /Volumes/SDL2_ttf"
+
+hdiutil detach /Volumes/SDL2 && hdiutil detach /Volumes/SDL2_ttf
+```
+
+### Apple Silicon only (arm64)
+
+Use this when you only need to run on Apple Silicon and want a faster build. Also required
+when Homebrew SDL2 is x86_64-only (Intel Homebrew at `/usr/local`).
+
+```bash
+curl -LO https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.dmg
+curl -LO https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.24.0/SDL2_ttf-2.24.0.dmg
+hdiutil attach SDL2-2.32.10.dmg -mountpoint /Volumes/SDL2
+hdiutil attach SDL2_ttf-2.24.0.dmg -mountpoint /Volumes/SDL2_ttf
+
+make dmg \
+  ARCH="-arch arm64" \
+  "CFLAGS=-std=gnu11 -O2 -arch arm64 -I. -I../app/src/main/jni \
+   -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
+   -DAPP_VERSION='\"$(git describe --tags --abbrev=0)\"' \
+   -I/Volumes/SDL2/SDL2.framework/Headers \
+   -Wno-implicit-function-declaration -Wno-incompatible-pointer-types \
+   -Wno-int-conversion -Wno-unused-variable -Wno-unused-function \
+   -Wno-deprecated-non-prototype" \
+  "LDFLAGS=-arch arm64 \
+   -F/Volumes/SDL2 -framework SDL2 \
+   -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread" \
+  "FRAMEWORK_DIRS=/Volumes/SDL2 /Volumes/SDL2_ttf"
 
 hdiutil detach /Volumes/SDL2 && hdiutil detach /Volumes/SDL2_ttf
 ```
