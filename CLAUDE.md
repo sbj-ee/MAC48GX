@@ -96,6 +96,10 @@ hdiutil detach /Volumes/SDL2 && hdiutil detach /Volumes/SDL2_ttf
 - **Never call `pthread_mutex_lock` from a signal handler.** SIGALRM only sets `got_alarm = 1`.
 - `blockConditionVariable()` uses `pthread_cond_timedwait` (20ms).
 
+### Mouse input
+- **Always convert mouse event coordinates with `SDL_RenderWindowToLogical` before `hit_test`.** On Retina/HiDPI displays, SDL delivers events in physical pixels (2× window size) while `SDL_RenderSetLogicalSize` maps rendering to logical coordinates. Without conversion every click misses by 2×.
+- **Mouse release is deferred ≥80ms after press** (`pending_release` / `release_after_ms` in `main()`). The HP-48 keyboard timer must fire at least once while the key bit is set; press+release sent back-to-back in the same SDL poll pass are too fast and the keypress is silently dropped.
+
 ### Display
 - Emulator writes RGB565 to `disp_buf_short[]` / `disp_buf_header_short[]`
 - SDL render loop copies to texture only when `flipable` is set
