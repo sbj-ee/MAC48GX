@@ -43,6 +43,7 @@
 #include "device.h"
 #include "x48.h"
 #include "rpl.h"
+#include "update_check.h"
 
 /* ------------------------------------------------------------------
  * Globals required by the emulator core
@@ -1147,6 +1148,10 @@ int main(int argc, char **argv)
     int show_keyboard_help = 0;
     int show_about = 0;
 
+    /* Quiet update check at launch: only speaks up if a newer release exists */
+    if (!test_mode && !getenv("MAC48GX_NO_UPDATE_CHECK"))
+        update_check_start(1);
+
     /* --- SDL event loop --- */
     SDL_Event ev;
     int running = 1;
@@ -1279,6 +1284,12 @@ int main(int argc, char **argv)
                     break;
                 }
 
+                /* Cmd+U = check for updates */
+                if (cmd && ev.key.keysym.sym == SDLK_u) {
+                    update_check_start(0);
+                    break;
+                }
+
                 /* Cmd+I = toggle about overlay */
                 if (cmd && ev.key.keysym.sym == SDLK_i) {
                     show_about = !show_about;
@@ -1376,8 +1387,10 @@ int main(int argc, char **argv)
             draw_text_left(renderer, font_btn_sm, "This help", gy, rx, y, 0); y += 26;
             draw_text_left(renderer, font_btn_sm, "Cmd + I", w, lx, y, 0);
             draw_text_left(renderer, font_btn_sm, "About", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Cmd + U", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm, "Check for updates", gy, rx, y, 0); y += 26;
             draw_text_left(renderer, font_btn_sm, "Cmd + Q", w, lx, y, 0);
-            draw_text_left(renderer, font_btn_sm, "Quit", gy, rx, y, 0); y += 40;
+            draw_text_left(renderer, font_btn_sm, "Quit", gy, rx, y, 0); y += 34;
 
             draw_text_centered(renderer, font_btn_sm, "Click or press Esc to dismiss", gy, WIN_W/2, y, 0);
             SDL_RenderPresent(renderer);
@@ -1421,6 +1434,37 @@ int main(int argc, char **argv)
             pthread_mutex_unlock(&uiConditionMutex);
             pressed_btn = -1;
             pending_release = 0;
+        }
+
+        /* Report finished update checks */
+        {
+            char utag[64], uurl[512];
+            int us = update_check_poll(utag, sizeof(utag), uurl, sizeof(uurl));
+            if (us == UPD_NEWER) {
+                char msg[256];
+                snprintf(msg, sizeof(msg),
+                         "MAC48GX %s is available.\nYou have %s.", utag, APP_VERSION);
+                const SDL_MessageBoxButtonData btns[] = {
+                    { SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Later" },
+                    { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Download" },
+                };
+                const SDL_MessageBoxData mb = {
+                    SDL_MESSAGEBOX_INFORMATION, window, "Update Available", msg,
+                    SDL_arraysize(btns), btns, NULL
+                };
+                int choice = 0;
+                if (SDL_ShowMessageBox(&mb, &choice) == 0 && choice == 1)
+                    SDL_OpenURL(uurl);
+            } else if (us == UPD_CURRENT) {
+                char msg[160];
+                snprintf(msg, sizeof(msg), "You're on the latest version (%s).", APP_VERSION);
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
+                                         "No Updates", msg, window);
+            } else if (us == UPD_FAILED) {
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Update Check Failed",
+                    "Couldn't reach GitHub to check for updates.\n"
+                    "Check your internet connection and try again.", window);
+            }
         }
 
         update_audio();

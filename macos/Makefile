@@ -51,7 +51,8 @@ CORE_SRCS := \
 MAC_SRCS := \
     $(MAC)/main_sdl.c \
     $(MAC)/x48_sdl.c \
-    $(MAC)/lcd_mac.c
+    $(MAC)/lcd_mac.c \
+    $(MAC)/update_check.c
 
 SRCS := $(CORE_SRCS) $(MAC_SRCS)
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(notdir $(SRCS)))
