@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <pthread.h>
 #include <pwd.h>
@@ -170,7 +171,7 @@ int main(int argc, char **argv)
     printf("Booting emulator...\n");
     pthread_create(&emu_thread, NULL, emulator_thread, NULL);
     while (!emu_running) usleep(10000);
-    usleep(500000);
+    sleep_us(500000L * timing_scale());   /* let the ROM finish booting */
     printf("Emulator ready.\n");
 
     run_all_tests();

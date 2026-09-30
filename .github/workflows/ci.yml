@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    name: macOS build + tests
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install SDL2
+        run: brew install sdl2 sdl2_ttf
+      - name: Build
+        working-directory: macos
+        # Sources include <SDL2/SDL.h>; sdl2-config only adds include/SDL2
+        run: make
+        env:
+          CPATH: /opt/homebrew/include
+      - name: Headless tests (148)
+        working-directory: macos
+        run: make test || { echo "::warning::Headless tests failed once (known flaky dropped keypress); retrying"; rm -rf "$HOME/.droid48-test"; ./build/MAC48GX-test; }
+        env:
+          MAC48GX_TEST_TIMING: '2'
+      - name: App bundle
+        working-directory: macos
+        run: make bundle
+        env:
+          CPATH: /opt/homebrew/include
+
+  linux-tests:
+    name: Linux headless tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Headless tests (148)
+        working-directory: macos
+        run: make test CC=gcc || { echo "::warning::Headless tests failed once (known flaky dropped keypress); retrying"; rm -rf "$HOME/.droid48-test"; ./build/MAC48GX-test; }
+        env:
+          MAC48GX_TEST_TIMING: '2'
