@@ -14,6 +14,7 @@ This port compiles the C emulator core natively for macOS and replaces the Andro
 - Button press effect (physical 2px depression)
 - Copy/paste: Cmd+C copies stack to clipboard, Cmd+V pastes numbers
 - Keyboard shortcut overlay (Cmd+K) and About screen (Cmd+I)
+- Check for Updates (Cmd+U) against GitHub releases, plus a quiet check at launch that only speaks up when a newer version exists (set `MAC48GX_NO_UPDATE_CHECK=1` to disable)
 - HiDPI/Retina display support
 - Universal binary (x86_64 + arm64) — runs natively on Intel and Apple Silicon
 - Native `.app` bundle and DMG installer
@@ -132,8 +133,8 @@ See [MANUAL_TESTS.md](MANUAL_TESTS.md) for manual tests covering vectors, matric
 | `+ - * /` | Arithmetic | | `Cmd+V` | Paste number |
 | `Enter` | ENTER / DUP | | `Cmd+K` | Keyboard help overlay |
 | `Backspace` | Backspace / DROP | | `Cmd+I` | About overlay |
-| `Delete` | DEL | | `Cmd+Q` | Quit |
-| `Escape` | ON / CANCEL | | | |
+| `Delete` | DEL | | `Cmd+U` | Check for updates |
+| `Escape` | ON / CANCEL | | `Cmd+Q` | Quit |
 | Arrow keys | Cursor / nav | | | |
 | `F1`-`F6` | Menu keys A-F | | | |
 | `s` `c` `t` | SIN COS TAN | | | |
