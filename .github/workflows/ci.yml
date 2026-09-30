@@ -25,6 +25,8 @@ jobs:
       - name: Headless tests (148)
         working-directory: macos
         run: make test
+        env:
+          MAC48GX_TEST_TIMING: '2'
       - name: App bundle
         working-directory: macos
         run: make bundle
@@ -39,3 +41,5 @@ jobs:
       - name: Headless tests (148)
         working-directory: macos
         run: make test CC=gcc
+        env:
+          MAC48GX_TEST_TIMING: '2'

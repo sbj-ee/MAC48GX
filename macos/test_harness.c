@@ -170,7 +170,7 @@ int main(int argc, char **argv)
     printf("Booting emulator...\n");
     pthread_create(&emu_thread, NULL, emulator_thread, NULL);
     while (!emu_running) usleep(10000);
-    usleep(500000);
+    usleep(500000 * timing_scale());   /* let the ROM finish booting */
     printf("Emulator ready.\n");
 
     run_all_tests();

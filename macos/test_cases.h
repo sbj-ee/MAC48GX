@@ -82,6 +82,18 @@ static int tests_failed = 0;
 
 /* --- Helpers --- */
 
+/* Timing scale for slow/shared machines (e.g. CI runners).
+ * MAC48GX_TEST_TIMING=2 doubles every key hold, gap and settle wait. */
+static int timing_scale(void)
+{
+    static int scale = 0;
+    if (!scale) {
+        const char *e = getenv("MAC48GX_TEST_TIMING");
+        scale = (e && atoi(e) > 0) ? atoi(e) : 1;
+    }
+    return scale;
+}
+
 static void press_key(int button_index)
 {
     sdl_push_event(button_index + 1);
@@ -89,17 +101,17 @@ static void press_key(int button_index)
     pthread_mutex_lock(&uiConditionMutex);
     pthread_cond_signal(&uiConditionVariable);
     pthread_mutex_unlock(&uiConditionMutex);
-    usleep(100000);
+    usleep(100000 * timing_scale());
 
     sdl_push_event(button_index + 100);
     got_alarm = 1;
     pthread_mutex_lock(&uiConditionMutex);
     pthread_cond_signal(&uiConditionVariable);
     pthread_mutex_unlock(&uiConditionMutex);
-    usleep(60000);
+    usleep(60000 * timing_scale());
 }
 
-static void wait_computation(int ms) { usleep(ms * 1000); }
+static void wait_computation(int ms) { usleep(ms * 1000 * timing_scale()); }
 
 static void type_number(const char *num)
 {
