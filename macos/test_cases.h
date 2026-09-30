@@ -94,6 +94,14 @@ static int timing_scale(void)
     return scale;
 }
 
+/* usleep() may reject values >= 1,000,000 (EINVAL on macOS), which would
+ * silently skip long waits once scaled. Use nanosleep instead. */
+static void sleep_us(long us)
+{
+    struct timespec ts = { us / 1000000, (us % 1000000) * 1000 };
+    while (nanosleep(&ts, &ts) == -1 && errno == EINTR) { }
+}
+
 static void press_key(int button_index)
 {
     sdl_push_event(button_index + 1);
@@ -101,17 +109,17 @@ static void press_key(int button_index)
     pthread_mutex_lock(&uiConditionMutex);
     pthread_cond_signal(&uiConditionVariable);
     pthread_mutex_unlock(&uiConditionMutex);
-    usleep(100000 * timing_scale());
+    sleep_us(100000L * timing_scale());
 
     sdl_push_event(button_index + 100);
     got_alarm = 1;
     pthread_mutex_lock(&uiConditionMutex);
     pthread_cond_signal(&uiConditionVariable);
     pthread_mutex_unlock(&uiConditionMutex);
-    usleep(60000 * timing_scale());
+    sleep_us(60000L * timing_scale());
 }
 
-static void wait_computation(int ms) { usleep(ms * 1000 * timing_scale()); }
+static void wait_computation(int ms) { sleep_us((long)ms * 1000 * timing_scale()); }
 
 static void type_number(const char *num)
 {
