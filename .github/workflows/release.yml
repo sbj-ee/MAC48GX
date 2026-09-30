@@ -37,7 +37,7 @@ jobs:
 
       - name: Headless tests
         working-directory: macos
-        run: make test || { echo "::warning::Headless tests failed once (known flaky dropped keypress); retrying"; ./build/MAC48GX-test; }
+        run: make test || { echo "::warning::Headless tests failed once (known flaky dropped keypress); retrying"; rm -rf "$HOME/.droid48-test"; ./build/MAC48GX-test; }
         env:
           MAC48GX_TEST_TIMING: '2'
 
@@ -45,6 +45,7 @@ jobs:
         working-directory: macos
         run: |
           VER="$(git describe --tags --abbrev=0)"
+          make clean   # test step left single-arch objects in build/
           make dmg \
             ARCH="-arch x86_64 -arch arm64" \
             "CFLAGS=-std=gnu11 -O2 -arch x86_64 -arch arm64 -I. -I../app/src/main/jni \
