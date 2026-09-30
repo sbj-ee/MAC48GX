@@ -27,6 +27,11 @@ jobs:
           curl -fsSLO https://github.com/libsdl-org/SDL_ttf/releases/download/release-${SDL2_TTF_VER}/SDL2_ttf-${SDL2_TTF_VER}.dmg
           hdiutil attach SDL2-${SDL2_VER}.dmg -mountpoint /Volumes/SDL2 -nobrowse
           hdiutil attach SDL2_ttf-${SDL2_TTF_VER}.dmg -mountpoint /Volumes/SDL2_ttf -nobrowse
+          # Sources include <SDL2/SDL.h> and <SDL2/SDL_ttf.h>; expose both
+          # frameworks' headers under one SDL2/ prefix.
+          mkdir -p "$RUNNER_TEMP/sdlinc/SDL2"
+          ln -sf /Volumes/SDL2/SDL2.framework/Headers/*.h "$RUNNER_TEMP/sdlinc/SDL2/"
+          ln -sf /Volumes/SDL2_ttf/SDL2_ttf.framework/Headers/*.h "$RUNNER_TEMP/sdlinc/SDL2/"
 
       - name: Headless tests
         working-directory: macos
@@ -41,7 +46,7 @@ jobs:
             "CFLAGS=-std=gnu11 -O2 -arch x86_64 -arch arm64 -I. -I../app/src/main/jni \
              -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
              -DAPP_VERSION='\"${VER}\"' \
-             -I/Volumes/SDL2/SDL2.framework/Headers \
+             -I${RUNNER_TEMP}/sdlinc -I/Volumes/SDL2/SDL2.framework/Headers \
              -Wno-implicit-function-declaration -Wno-incompatible-pointer-types \
              -Wno-int-conversion -Wno-unused-variable -Wno-unused-function \
              -Wno-deprecated-non-prototype" \

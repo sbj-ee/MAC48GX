@@ -18,13 +18,18 @@ jobs:
         run: brew install sdl2 sdl2_ttf
       - name: Build
         working-directory: macos
+        # Sources include <SDL2/SDL.h>; sdl2-config only adds include/SDL2
         run: make
+        env:
+          CPATH: /opt/homebrew/include
       - name: Headless tests (148)
         working-directory: macos
         run: make test
       - name: App bundle
         working-directory: macos
         run: make bundle
+        env:
+          CPATH: /opt/homebrew/include
 
   linux-tests:
     name: Linux headless tests
