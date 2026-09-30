@@ -3,6 +3,8 @@ name: Release
 on:
   push:
     tags: ['v*']
+  pull_request:
+    paths: ['.github/workflows/release.yml']   # dry-run build; publish is tag-only
   workflow_dispatch:
 
 permissions:
