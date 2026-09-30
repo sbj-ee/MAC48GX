@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    name: macOS build + tests
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install SDL2
+        run: brew install sdl2 sdl2_ttf
+      - name: Build
+        working-directory: macos
+        run: make
+      - name: Headless tests (148)
+        working-directory: macos
+        run: make test
+      - name: App bundle
+        working-directory: macos
+        run: make bundle
+
+  linux-tests:
+    name: Linux headless tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Headless tests (148)
+        working-directory: macos
+        run: make test CC=gcc

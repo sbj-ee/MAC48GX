@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  SDL2_VER: 2.32.10
+  SDL2_TTF_VER: 2.24.0
+
+jobs:
+  dmg:
+    name: Universal .dmg
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch universal SDL2 frameworks
+        run: |
+          curl -fsSLO https://github.com/libsdl-org/SDL/releases/download/release-${SDL2_VER}/SDL2-${SDL2_VER}.dmg
+          curl -fsSLO https://github.com/libsdl-org/SDL_ttf/releases/download/release-${SDL2_TTF_VER}/SDL2_ttf-${SDL2_TTF_VER}.dmg
+          hdiutil attach SDL2-${SDL2_VER}.dmg -mountpoint /Volumes/SDL2 -nobrowse
+          hdiutil attach SDL2_ttf-${SDL2_TTF_VER}.dmg -mountpoint /Volumes/SDL2_ttf -nobrowse
+
+      - name: Headless tests
+        working-directory: macos
+        run: make test
+
+      - name: Build universal .dmg
+        working-directory: macos
+        run: |
+          VER="$(git describe --tags --abbrev=0)"
+          make dmg \
+            ARCH="-arch x86_64 -arch arm64" \
+            "CFLAGS=-std=gnu11 -O2 -arch x86_64 -arch arm64 -I. -I../app/src/main/jni \
+             -DMAC_BUILD=1 -DLINUX=1 -DSYSV_TIME=1 \
+             -DAPP_VERSION='\"${VER}\"' \
+             -I/Volumes/SDL2/SDL2.framework/Headers \
+             -Wno-implicit-function-declaration -Wno-incompatible-pointer-types \
+             -Wno-int-conversion -Wno-unused-variable -Wno-unused-function \
+             -Wno-deprecated-non-prototype" \
+            "LDFLAGS=-arch x86_64 -arch arm64 \
+             -F/Volumes/SDL2 -framework SDL2 \
+             -F/Volumes/SDL2_ttf -framework SDL2_ttf -lpthread \
+             -rpath @executable_path/../Frameworks" \
+            "FRAMEWORK_DIRS=/Volumes/SDL2 /Volumes/SDL2_ttf"
+          lipo -info build/MAC48GX.app/Contents/MacOS/MAC48GX
+          ls -lh build/*.dmg
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MAC48GX-dmg
+          path: macos/build/*.dmg
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" macos/build/*.dmg \
+            --title "MAC48GX ${GITHUB_REF_NAME}" --generate-notes \
+          || gh release upload "${GITHUB_REF_NAME}" macos/build/*.dmg --clobber
