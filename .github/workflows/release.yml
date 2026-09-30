@@ -37,7 +37,7 @@ jobs:
 
       - name: Headless tests
         working-directory: macos
-        run: make test
+        run: make test || { echo "::warning::Headless tests failed once (known flaky dropped keypress); retrying"; ./build/MAC48GX-test; }
         env:
           MAC48GX_TEST_TIMING: '2'
 

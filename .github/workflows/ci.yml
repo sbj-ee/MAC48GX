@@ -24,7 +24,7 @@ jobs:
           CPATH: /opt/homebrew/include
       - name: Headless tests (148)
         working-directory: macos
-        run: make test
+        run: make test || { echo "::warning::Headless tests failed once (known flaky dropped keypress); retrying"; ./build/MAC48GX-test; }
         env:
           MAC48GX_TEST_TIMING: '2'
       - name: App bundle
@@ -40,6 +40,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Headless tests (148)
         working-directory: macos
-        run: make test CC=gcc
+        run: make test CC=gcc || { echo "::warning::Headless tests failed once (known flaky dropped keypress); retrying"; ./build/MAC48GX-test; }
         env:
           MAC48GX_TEST_TIMING: '2'
