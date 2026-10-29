@@ -1149,7 +1149,7 @@ int main(int argc, char **argv)
     int show_about = 0;
 
     /* Quiet update check at launch: only speaks up if a newer release exists */
-    if (!test_mode && !getenv("MAC48GX_NO_UPDATE_CHECK"))
+    if (!test_mode && !getenv("MAC48GX_NO_UPDATE_CHECK") && update_check_at_startup_enabled())
         update_check_start(1);
 
     /* --- SDL event loop --- */
@@ -1284,6 +1284,17 @@ int main(int argc, char **argv)
                     break;
                 }
 
+                /* Cmd+Shift+U = toggle the check at startup */
+                if (cmd && (ev.key.keysym.mod & KMOD_SHIFT) && ev.key.keysym.sym == SDLK_u) {
+                    int on = !update_check_at_startup_enabled();
+                    update_set_check_at_startup(on);
+                    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Check for Updates at Startup",
+                        on ? "MAC48GX will check for updates when it starts (at most once per launch)."
+                           : "MAC48GX won't check for updates when it starts. Press Cmd+U to check.",
+                        window);
+                    break;
+                }
+
                 /* Cmd+U = check for updates */
                 if (cmd && ev.key.keysym.sym == SDLK_u) {
                     update_check_start(0);
@@ -1389,6 +1400,10 @@ int main(int argc, char **argv)
             draw_text_left(renderer, font_btn_sm, "About", gy, rx, y, 0); y += 26;
             draw_text_left(renderer, font_btn_sm, "Cmd + U", w, lx, y, 0);
             draw_text_left(renderer, font_btn_sm, "Check for updates", gy, rx, y, 0); y += 26;
+            draw_text_left(renderer, font_btn_sm, "Cmd + Shift + U", w, lx, y, 0);
+            draw_text_left(renderer, font_btn_sm,
+                           update_check_at_startup_enabled() ? "Check at startup: on" : "Check at startup: off",
+                           gy, rx, y, 0); y += 26;
             draw_text_left(renderer, font_btn_sm, "Cmd + Q", w, lx, y, 0);
             draw_text_left(renderer, font_btn_sm, "Quit", gy, rx, y, 0); y += 34;
 
@@ -1446,15 +1461,20 @@ int main(int argc, char **argv)
                          "MAC48GX %s is available.\nYou have %s.", utag, APP_VERSION);
                 const SDL_MessageBoxButtonData btns[] = {
                     { SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Later" },
-                    { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Download" },
+                    { 0, 2, "Release Page" },
+                    { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Install" },
                 };
                 const SDL_MessageBoxData mb = {
                     SDL_MESSAGEBOX_INFORMATION, window, "Update Available", msg,
                     SDL_arraysize(btns), btns, NULL
                 };
                 int choice = 0;
-                if (SDL_ShowMessageBox(&mb, &choice) == 0 && choice == 1)
-                    SDL_OpenURL(uurl);
+                if (SDL_ShowMessageBox(&mb, &choice) == 0) {
+                    if (choice == 1)
+                        update_install_start();   /* download, verify signature + SHA-256, open .dmg */
+                    else if (choice == 2)
+                        SDL_OpenURL(uurl);
+                }
             } else if (us == UPD_CURRENT) {
                 char msg[160];
                 snprintf(msg, sizeof(msg), "You're on the latest version (%s).", APP_VERSION);
@@ -1465,6 +1485,16 @@ int main(int argc, char **argv)
                     "Couldn't reach GitHub to check for updates.\n"
                     "Check your internet connection and try again.", window);
             }
+        }
+
+        /* Report finished installs */
+        {
+            char imsg[1024];
+            int is = update_install_poll(imsg, sizeof(imsg));
+            if (is == INST_DONE)
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Update Downloaded", imsg, window);
+            else if (is == INST_FAILED)
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Update Not Installed", imsg, window);
         }
 
         update_audio();

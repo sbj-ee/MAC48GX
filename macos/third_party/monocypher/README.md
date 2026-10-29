@@ -1,0 +1,1 @@
+Monocypher 4.0.2 (https://github.com/LoupVaillant/Monocypher, tag 4.0.2), unmodified: src/monocypher.[ch] and src/optional/monocypher-ed25519.[ch]. Same version zedit pins. Used only to verify minisign signatures (Ed25519 + BLAKE2b).
