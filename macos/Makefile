@@ -60,6 +60,7 @@ MONO_SRCS := $(MAC)/third_party/monocypher/monocypher.c \
              $(MAC)/third_party/monocypher/monocypher-ed25519.c
 
 SRCS := $(CORE_SRCS) $(MAC_SRCS) $(MONO_SRCS)
+UPDATE_TEST := $(BUILD)/update_test
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(notdir $(SRCS)))
 
 TARGET := $(BUILD)/MAC48GX
@@ -174,7 +175,6 @@ clean:
 # Signed-updater tests: minisign (real minisign fixtures), SHA-256, URL
 # policy, the download -> verify flow with a throwaway key, and the
 # check-at-startup preference. No SDL, no network.
-UPDATE_TEST := $(BUILD)/update_test
 $(UPDATE_TEST): $(MAC)/update_test.c $(MAC)/update_check.c $(MAC)/update_verify.c $(MONO_SRCS) | $(BUILD)
 	$(CC) -std=gnu11 -O2 -Wall -I$(MAC) -DAPP_VERSION='"test"' $^ -lpthread -o $@
 
