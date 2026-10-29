@@ -52,9 +52,15 @@ MAC_SRCS := \
     $(MAC)/main_sdl.c \
     $(MAC)/x48_sdl.c \
     $(MAC)/lcd_mac.c \
-    $(MAC)/update_check.c
+    $(MAC)/update_check.c \
+    $(MAC)/update_verify.c
 
-SRCS := $(CORE_SRCS) $(MAC_SRCS)
+# Vendored Monocypher 4.0.2 (Ed25519 + BLAKE2b) to verify minisign signatures.
+MONO_SRCS := $(MAC)/third_party/monocypher/monocypher.c \
+             $(MAC)/third_party/monocypher/monocypher-ed25519.c
+
+SRCS := $(CORE_SRCS) $(MAC_SRCS) $(MONO_SRCS)
+UPDATE_TEST := $(BUILD)/update_test
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(notdir $(SRCS)))
 
 TARGET := $(BUILD)/MAC48GX
@@ -89,6 +95,9 @@ $(BUILD):
 $(BUILD)/%.o: $(JNI)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(BUILD)/%.o: $(MAC)/third_party/monocypher/%.c | $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(BUILD)/%.o: $(MAC)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -116,7 +125,8 @@ $(TEST_TARGET): $(TEST_OBJS)
 	@cp -n $(JNI)/rom  $(BUILD)/rom  2>/dev/null || true
 	@cp -n $(JNI)/ram  $(BUILD)/ram  2>/dev/null || true
 
-test: $(BUILD) $(TEST_TARGET)
+test: $(BUILD) $(TEST_TARGET) $(UPDATE_TEST)
+	$(UPDATE_TEST)
 	$(TEST_TARGET)
 
 # macOS .app bundle — double-clickable, no terminal window
@@ -161,3 +171,13 @@ dmg: bundle
 
 clean:
 	rm -rf $(BUILD)
+
+# Signed-updater tests: minisign (real minisign fixtures), SHA-256, URL
+# policy, the download -> verify flow with a throwaway key, and the
+# check-at-startup preference. No SDL, no network.
+$(UPDATE_TEST): $(MAC)/update_test.c $(MAC)/update_check.c $(MAC)/update_verify.c $(MONO_SRCS) | $(BUILD)
+	$(CC) -std=gnu11 -O2 -Wall -I$(MAC) -DAPP_VERSION='"test"' $^ -lpthread -o $@
+
+test-update: $(UPDATE_TEST)
+	$(UPDATE_TEST)
+.PHONY: test-update

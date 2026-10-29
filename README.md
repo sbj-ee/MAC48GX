@@ -219,3 +219,10 @@ app/src/main/assets/
 
 **GNU General Public License v3.0** (GPL-3.0). Core emulator: GPL v2+.
 See [COPYING](COPYING).
+
+## Updates
+
+Cmd+U checks GitHub for a newer release. **Install** downloads the .dmg and
+only opens it after verifying the release's minisign-signed `SHA256SUMS`
+against the key built into the app. Cmd+Shift+U toggles the check at
+startup. See [CHANGELOG.md](CHANGELOG.md).
